@@ -1,0 +1,18 @@
+{# The inspect window. Call: itemwin(item, lines(item), link=True, compact=False) #}
+{% macro itemwin(item, L, link=False, compact=False, extra=None) -%}
+<article class="itemwin {{ 'compact' if compact }} {{ 'draft' if item.status == 'stale' }}">
+  <div class="nm">{% if link %}<a href="/archive/items/{{ item.id }}">{{ L.name }}</a>{% else %}{{ L.name }}{% endif %}{% if item.status == "stale" %} <span class="pill ember" style="font-family:var(--font-body)">outdated</span>{% endif %}</div>
+  {% if L.flags %}<div class="flags">{{ L.flags }}</div>{% endif %}
+  <div class="kv">
+    {% if L.slot %}<span>Slot</span><span>{{ L.slot }}</span>{% endif %}
+    {% if item.item_type and not compact %}<span>Type</span><span>{{ item.item_type }}</span>{% endif %}
+  </div>
+  {% if L.combat %}<div>{{ L.combat }}</div>{% endif %}
+  {% if L.stats %}<div class="statline">{% for k, v in L.stats %}<span>{{ k }}: <b>{{ "+" if v > 0 }}{{ v }}</b></span>{% endfor %}</div>{% endif %}
+  {% if L.resists %}<div class="statline">{% for k, v in L.resists %}<span>{{ k }}: <b>{{ "+" if v > 0 }}{{ v }}</b></span>{% endfor %}</div>{% endif %}
+  {% for e in L.effects %}<div class="effects">Effect: {{ e }}</div>{% endfor %}
+  {% if L.weight %}<div>{{ L.weight }}</div>{% endif %}
+  <div class="kv">{% if L.classes %}<span>Class</span><span>{{ L.classes }}</span>{% endif %}<span>Race</span><span>{{ L.races }}</span></div>
+  {% if extra %}<div class="guildline">{{ extra }}</div>{% endif %}
+</article>
+{%- endmacro %}

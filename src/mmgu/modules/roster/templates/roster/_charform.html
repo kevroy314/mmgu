@@ -1,0 +1,24 @@
+{% macro charform(game, csrf, action, ch=None, member_id=None, default_server="", can_mule=False, submit="Save") -%}
+<form class="stack" method="post" action="{{ action }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% if member_id %}<input type="hidden" name="member_id" value="{{ member_id }}">{% endif %}
+  {% set sfx = ch.id if ch else "new" %}
+  <div class="fields">
+    <div class="field"><label for="cn-{{ sfx }}">Name</label><input id="cn-{{ sfx }}" name="name" type="text" required maxlength="40" value="{{ ch.name if ch else '' }}"></div>
+    <div class="field"><label for="cc-{{ sfx }}">Class</label>
+      <select id="cc-{{ sfx }}" name="class_name"><option value="">—</option>{% for c in game.classes %}<option {% if ch and ch.class_name == c.name %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="cl-{{ sfx }}">Level</label><input id="cl-{{ sfx }}" name="level" type="number" min="1" max="{{ game.level_cap }}" value="{{ ch.level if ch and ch.level else '' }}"></div>
+    <div class="field"><label for="cr-{{ sfx }}">Race</label>
+      <select id="cr-{{ sfx }}" name="race"><option value="">—</option>{% for r in game.races %}<option {% if ch and ch.race == r %}selected{% endif %}>{{ r }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="cs-{{ sfx }}">Server</label>
+      <input id="cs-{{ sfx }}" name="server" type="text" list="servers" value="{{ ch.server if ch else default_server }}"></div>
+  </div>
+  <div class="row">
+    <label class="check"><input type="checkbox" name="is_main" value="1" {% if ch and ch.is_main %}checked{% endif %}> Main character</label>
+    {% if can_mule %}<label class="check"><input type="checkbox" name="is_bank_mule" value="1" {% if ch and ch.is_bank_mule %}checked{% endif %}> Guild bank mule</label>{% endif %}
+  </div>
+  <div class="field"><label for="cnt-{{ sfx }}">Notes</label><input id="cnt-{{ sfx }}" name="notes" type="text" maxlength="300" placeholder="Optional, e.g. 'mostly on weekends'" value="{{ ch.notes if ch and ch.notes else '' }}"></div>
+  <div class="form-foot"><button class="btn primary small">{{ submit }}</button></div>
+</form>
+<datalist id="servers">{% for s in game.servers %}<option>{{ s }}</option>{% endfor %}</datalist>
+{%- endmacro %}

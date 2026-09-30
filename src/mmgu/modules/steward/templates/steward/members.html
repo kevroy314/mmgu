@@ -1,0 +1,25 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Ranks & duties{% endblock %}
+{% block content %}
+{{ ui.page_head("Admin", "Ranks & duties", "Ranks synced from Discord roles are refreshed at each login; manual changes here stay until you change them.") }}
+{% include "steward/_tabs.html" %}
+<div class="table-wrap"><table class="t"><thead><tr><th>Member</th><th>Rank</th><th>Duties</th><th>Status</th><th></th></tr></thead><tbody>
+{% for m in members %}{% set inf = info.get(m.id, {"roles": {}, "providers": []}) %}
+{% set cur_rank = (inf.roles.keys() | select("in", ["leader","officer","member","recruit","guest"]) | list) %}
+<tr><td>{{ ui.member_chip(m) }}<div class="tiny muted">via {{ inf.providers | sort | join(", ") or "—" }} · seen {{ m.last_seen_at | reltime if m.last_seen_at else "never" }}</div></td>
+  <td colspan="4">
+    <form class="row" method="post" action="/steward/members/{{ m.id }}">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <select name="rank" aria-label="Rank for {{ m.display_name }}" style="width:auto">
+        {% set best = (["leader","officer","member","recruit","guest"] | select("in", cur_rank) | first) or hall.settings.default_role %}
+        {% for k, l in ranks %}<option value="{{ k }}" {% if k == best %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+      <div class="chips">{% for k, l, _ in duties %}<label class="chip"><input type="checkbox" name="duty" value="{{ k }}" {% if k in inf.roles %}checked{% endif %}>{{ l }}</label>{% endfor %}</div>
+      <select name="status" aria-label="Status" style="width:auto">{% for s in ["active","left","banned"] %}<option {% if m.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+      <button class="btn small">Save</button>
+      {% for role, src in inf.roles.items() if src == "discord" %}<span class="pill arcane" title="from Discord role">{{ role }} · Discord</span>{% endfor %}
+    </form>
+  </td></tr>
+{% endfor %}
+</tbody></table></div>
+{% endblock %}

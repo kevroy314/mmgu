@@ -1,0 +1,34 @@
+{% extends "core/base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="gate">
+  <div class="card">
+    <span class="crest-mark" style="width:3.6rem;height:3.6rem">{{ icon("wave", 32) }}</span>
+    <p class="eyebrow">{{ hall.guild_name }}</p>
+    <h1>Enter the hall</h1>
+    {% if "discord" in modes %}
+      {% if discord_ready %}
+      <a class="btn primary" href="/auth/discord/login?next={{ next | urlencode }}" hx-boost="false">{{ icon("discord", 18) }} Log in with Discord</a>
+      <p class="tiny muted">We only read your Discord name, avatar and your roles in the guild server.</p>
+      {% else %}
+      <p class="muted small">Discord login needs <code>MMGU_DISCORD_CLIENT_ID</code> and <code>MMGU_DISCORD_CLIENT_SECRET</code>. See the setup guide.</p>
+      {% endif %}
+    {% endif %}
+    {% if "header" in modes %}
+      <p class="muted small">This hall is behind a sign-in gateway. If you're seeing this page, reload it; the gateway should sign you in.</p>
+    {% endif %}
+    {% if dev %}
+      <hr style="width:100%">
+      <form class="stack" method="post" action="/auth/dev" style="width:100%;text-align:left">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="next" value="{{ next }}">
+        <p class="eyebrow">Developer login</p>
+        <div class="field"><label for="dev-name">Name</label><input id="dev-name" name="name" type="text" required value="Test Leader"></div>
+        <div class="field"><label for="dev-rank">Rank</label>
+          <select id="dev-rank" name="rank">{% for r in ["leader","officer","member","recruit","guest","banker","crafter"] %}<option>{{ r }}</option>{% endfor %}</select></div>
+        <button class="btn">Log in (dev only)</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

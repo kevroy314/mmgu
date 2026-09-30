@@ -1,0 +1,4 @@
+<div id="quick-results" class="quick-results" {% if not hits and q|length < 2 %}hidden{% endif %}>
+{% for h in hits %}<a href="{{ h.url }}"><span>{{ h.title }}{% if h.subtitle %} <span class="muted tiny">· {{ h.subtitle }}</span>{% endif %}</span><span class="kind">{{ h.kind }}</span></a>{% endfor %}
+{% if q|length >= 2 %}<a href="/search?q={{ q | urlencode }}"><span>See all results for “{{ q }}”</span><span class="kind">↵</span></a>{% endif %}
+</div>

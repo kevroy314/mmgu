@@ -1,0 +1,64 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Your profile{% endblock %}
+{% block content %}
+{% call ui.page_head("Your profile", viewer.name) %}
+<form method="post" action="/logout"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost">Log out</button></form>
+{% endcall %}
+
+<div class="cols">
+  <div class="stack">
+    {% for p in panels %}{{ p | safe }}{% endfor %}
+  </div>
+
+  <div class="stack">
+    <section class="card">
+      <h3>Name and time zone</h3>
+      <form class="stack" method="post" action="/me">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="field"><label for="dn">Display name</label><input id="dn" name="display_name" type="text" value="{{ viewer.name }}" minlength="2" maxlength="60"></div>
+        <div class="field"><label for="tz">Time zone</label><input id="tz" name="timezone" type="text" placeholder="e.g. America/Chicago" value="{{ viewer.member.timezone or '' }}">
+          <span class="hint">Times already show in your browser's zone; this helps officers plan events.</span></div>
+        <button class="btn">Save</button>
+      </form>
+      <p class="tiny muted">Rank: <strong>{{ viewer.rank | capitalize }}</strong>{% if viewer.duties %} · Duties: {{ viewer.duties | sort | join(", ") }}{% endif %}</p>
+    </section>
+
+    <section class="card" id="discord">
+      <h3>{{ icon("discord", 18) }} Discord</h3>
+      {% if has_discord %}
+        <p class="small">Linked. Your slash commands and this web hall share one identity.</p>
+      {% else %}
+        <p class="small muted">Link your Discord account so bot commands count as you.</p>
+        {% if link_code %}
+          <p>In the guild Discord, type <code>/link {{ link_code }}</code> within 15 minutes.</p>
+          <button class="btn small" type="button" data-copy="/link {{ link_code }}">Copy command</button>
+        {% else %}
+          <form method="post" action="/me/link-code"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small">Get a link code</button></form>
+        {% endif %}
+      {% endif %}
+    </section>
+
+    {% if viewer.can("api.tokens") %}
+    <section class="card" id="tokens">
+      <h3>{{ icon("key", 18) }} API tokens</h3>
+      <p class="small muted">For companion tools, the MCP server and scripts. A token acts as you, with your rank.</p>
+      {% if new_token %}
+        <div class="notice gold"><strong>Copy this token now. It won't be shown again.</strong>
+          <code style="overflow-wrap:anywhere">{{ new_token }}</code>
+          <button class="btn small" type="button" data-copy="{{ new_token }}">Copy</button></div>
+      {% endif %}
+      {% if tokens %}
+      <div class="list">{% for t in tokens %}
+        <div class="line"><div class="main"><strong>{{ t.name }}</strong> <span class="mono tiny muted">{{ t.prefix }}…</span>
+          <div class="tiny muted">created {{ t.created_at | reltime }}{% if t.last_used_at %} · used {{ t.last_used_at | reltime }}{% endif %}</div></div>
+          <form method="post" action="/me/tokens/{{ t.id }}/revoke"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small danger">Revoke</button></form></div>
+      {% endfor %}</div>
+      {% endif %}
+      <form class="row" method="post" action="/me/tokens"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <input name="name" type="text" placeholder="Token name, e.g. MCP" style="flex:1" aria-label="Token name"><button class="btn small">Create token</button></form>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

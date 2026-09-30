@@ -1,0 +1,25 @@
+{% extends "core/base.html" %}
+{% block title %}The Hall{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="titles">
+    <p class="eyebrow">{{ hall.guild_name }} · The Hall</p>
+    <h1>Well met, {{ viewer.name }}</h1>
+    <p class="lede">What's happening in the guild right now.</p>
+  </div>
+  <div class="actions">
+    {% if "archive" in enabled and viewer.can("archive.catalog") %}<a class="btn primary" href="/archive/new">{{ icon("upload", 16) }} Catalog an item</a>{% endif %}
+    {% if "board" in enabled and viewer.can("board.post") %}<a class="btn" href="/board/new">{{ icon("pin", 16) }} Post to the board</a>{% endif %}
+  </div>
+</header>
+{% if pending_proposals %}
+<div class="notice gold"><strong>{{ plural(pending_proposals, "suggested change") }} waiting for review</strong>
+  <p class="small muted">Machine-read screenshots and imports need a person to approve them. <a href="/proposals">Review them</a>.</p></div>
+{% endif %}
+{% if cards %}
+<div class="grid-wide">{% for c in cards %}{{ c | safe }}{% endfor %}</div>
+{% else %}
+{% import "core/_macros.html" as ui %}
+{{ ui.empty("hearth", "The hall is quiet", "Once the guild starts cataloging items, posting requests and scheduling events, the highlights show up here.") }}
+{% endif %}
+{% endblock %}

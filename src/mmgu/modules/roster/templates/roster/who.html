@@ -1,0 +1,25 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Update from /who{% endblock %}
+{% block content %}
+{{ ui.page_head("Roster", "Update from /who", "Paste /who output (for example /who all guild) and the roll will update levels and classes. You'll see a preview first.") }}
+<form class="stack" method="post" action="/roster/who" style="max-width:52rem">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="field"><label for="who-text">Pasted /who lines</label>
+    <textarea id="who-text" name="text" rows="10" class="mono" placeholder="[60 Wizard] Velyra (High Elf) &lt;Your Guild&gt;&#10;[34 Cleric] Brannoc (Dwarf) &lt;Your Guild&gt;">{{ text }}</textarea></div>
+  {% if parsed is none %}
+  <div class="form-foot"><button class="btn primary">Preview</button></div>
+  {% else %}
+    {% if parsed %}
+    <div class="table-wrap"><table class="t"><thead><tr><th>Name</th><th class="n">Level</th><th>Class</th><th>Race</th><th>On the roll?</th></tr></thead><tbody>
+    {% for l in parsed %}{% set k = known.get(l.name) %}
+    <tr><td>{{ l.name }}</td><td class="n">{{ l.level or "—" }}</td><td>{{ l.class_name or "—" }}</td><td class="small">{{ l.race or "—" }}</td>
+    <td>{% if k %}{% if k.level != l.level and l.level %}<span class="pill gold">level {{ k.level or "?" }} → {{ l.level }}</span>{% else %}<span class="pill">no change</span>{% endif %}{% else %}<span class="pill ember">not on roll</span>{% endif %}</td></tr>
+    {% endfor %}</tbody></table></div>
+    <label class="check"><input type="checkbox" name="create_unknown" value="1"> Also add characters that aren't on the roll yet (unclaimed until their player adds them)</label>
+    <div class="form-foot"><button class="btn primary" name="apply" value="1">Apply {{ parsed | length }} lines</button><button class="btn">Preview again</button></div>
+    {% endif %}
+    {% if skipped %}<details class="fold"><summary>{{ skipped | length }} lines weren't recognised</summary><pre class="tiny mono">{{ skipped | join("\n") }}</pre></details>{% endif %}
+  {% endif %}
+</form>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+{{ ui.page_head("Admin", "Audit log", "Every change anyone (or any machine) made, newest first.") }}
+{% include "steward/_tabs.html" %}
+<form class="row" method="get" action="/steward/audit"><input type="text" name="action" value="{{ action }}" placeholder="Filter by action, e.g. vault or archive.item" style="max-width:22rem" aria-label="Filter"><button class="btn small">Filter</button></form>
+<div class="table-wrap"><table class="t"><thead><tr><th>When</th><th>Who</th><th>Action</th><th>What</th></tr></thead><tbody>
+{% for r in rows %}
+<tr><td class="small">{{ r.at | dt }}</td><td class="small">{{ names.get(r.actor_id, "system") }} <span class="pill">{{ r.via }}</span></td>
+<td class="mono tiny">{{ r.action }}</td><td class="small">{{ r.summary }}{% if r.before or r.after %}
+<details class="fold"><summary class="tiny">details</summary><pre class="tiny mono" style="white-space:pre-wrap;max-width:40rem">{% if r.before %}before: {{ r.before | tojson }}
+{% endif %}after: {{ r.after | tojson }}</pre></details>{% endif %}</td></tr>
+{% endfor %}
+</tbody></table></div>
+<div class="row">{% if page > 1 %}<a class="btn small" href="?action={{ action }}&page={{ page - 1 }}">Newer</a>{% endif %}{% if more %}<a class="btn small" href="?action={{ action }}&page={{ page + 1 }}">Older</a>{% endif %}</div>
+{% endblock %}

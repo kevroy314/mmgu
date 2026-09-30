@@ -1,0 +1,12 @@
+{% from "archive/_itemwin.html" import itemwin %}
+{% import "core/_macros.html" as ui %}
+<div id="results" class="section">
+  <div class="section-head"><h2>{{ ("Matches" if searching else "Recently cataloged") }}</h2><span class="muted small">{{ plural(items|length, "item") }}{% if not searching %} of {{ total }}{% endif %}</span></div>
+  {% if items %}
+  <div class="grid">{% for i in items %}{{ itemwin(i, lines(i), link=True, compact=True) }}{% endfor %}</div>
+  {% elif searching %}
+  {{ ui.empty("search", "Nothing matches", "Loosen a filter, or catalog it if nobody has yet.", "/archive/new", "Catalog an item") }}
+  {% else %}
+  {{ ui.empty("scroll", "The Archive is empty", "Drop a screenshot of an item's inspect window and the guild's catalog begins.", "/archive/new", "Catalog the first item") }}
+  {% endif %}
+</div>

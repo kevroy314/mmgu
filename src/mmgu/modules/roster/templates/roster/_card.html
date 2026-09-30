@@ -1,0 +1,7 @@
+{% import "core/_macros.html" as ui %}
+<section class="card">
+  <div class="row-between"><h3>{{ icon("banner", 18) }} The Muster Roll</h3><a class="small" href="/roster">Roster</a></div>
+  <div class="statbar"><div class="stat"><span class="v">{{ count }}</span><span class="k">members</span></div></div>
+  {% if mains %}<div class="chips">{% for c, n in mains[:10] %}<span class="chip">{{ ui.cls(game, c) }} <span class="num">{{ n }}</span></span>{% endfor %}</div>{% endif %}
+  {% if not mine %}<p class="small">You haven't added a character yet. <a href="/roster/me">Add your main</a>.</p>{% endif %}
+</section>

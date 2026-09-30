@@ -1,0 +1,9 @@
+{% import "core/_macros.html" as ui %}
+<section class="card">
+  <div class="row-between"><h3>{{ icon("banner", 18) }} Your characters</h3><a class="btn small" href="/roster/members/{{ member.id }}">Manage</a></div>
+  {% if chars %}
+  <div class="list">{% for c in chars %}<div class="line"><div class="main"><strong>{{ c.name }}</strong> <span class="small muted">{{ c.level or "?" }} {{ c.class_name or "" }}</span></div>{% if c.is_main %}<span class="pill gold">main</span>{% endif %}{% if c.is_bank_mule %}<span class="pill tide">bank</span>{% endif %}</div>{% endfor %}</div>
+  {% else %}
+  <p class="small muted">No characters yet. <a href="/roster/members/{{ member.id }}">Add your main</a> so the guild knows who you play.</p>
+  {% endif %}
+</section>

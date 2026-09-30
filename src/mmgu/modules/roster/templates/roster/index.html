@@ -1,0 +1,38 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}The Muster Roll{% endblock %}
+{% block content %}
+{% call ui.page_head("Roster", "The Muster Roll", "Everyone in the guild and the characters they play.") %}
+  <a class="btn primary" href="/roster/me">{{ icon("plus", 16) }} Add my characters</a>
+  {% if viewer.can("roster.import_who") %}<a class="btn" href="/roster/who">Update from /who</a>{% endif %}
+{% endcall %}
+
+{% if makeup %}
+<section class="card">
+  <div class="row-between"><h3>Class makeup</h3><span class="tiny muted">mains only</span></div>
+  <div class="chips">{% for c, n in makeup %}<a class="chip {{ 'on' if f.cls == c }}" href="/roster?cls={{ c | urlencode }}">{{ ui.cls(game, c) }} {{ c }} <strong class="num">{{ n }}</strong></a>{% endfor %}</div>
+</section>
+{% endif %}
+
+<form class="row" method="get" action="/roster" hx-get="/roster" hx-trigger="change, input changed delay:300ms from:input[name=q]">
+  <input type="search" name="q" placeholder="Name or member" value="{{ f.q }}" style="max-width:14rem" aria-label="Search the roster">
+  <select name="cls" style="width:auto" aria-label="Class"><option value="">All classes</option>{% for c in game.classes %}<option {% if f.cls == c.name %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  <select name="role" style="width:auto" aria-label="Role"><option value="">Any role</option>{% for r in game.event_roles if r.key != "any" %}<option value="{{ r.key }}" {% if f.role == r.key %}selected{% endif %}>{{ r.label }}</option>{% endfor %}</select>
+  <input type="number" name="min_level" placeholder="Min lvl" value="{{ f.min_level }}" style="width:6rem" aria-label="Minimum level">
+  <input type="number" name="max_level" placeholder="Max lvl" value="{{ f.max_level }}" style="width:6rem" aria-label="Maximum level">
+  <select name="mules" style="width:auto" aria-label="Bank mules"><option value="">Players</option><option value="only" {% if f.mules == 'only' %}selected{% endif %}>Bank mules</option><option value="all" {% if f.mules == 'all' %}selected{% endif %}>Everyone</option></select>
+</form>
+
+{% if rows %}
+<div class="table-wrap"><table class="t"><thead><tr><th>Character</th><th class="n">Level</th><th>Class</th><th>Race</th><th>Player</th><th></th></tr></thead><tbody>
+{% for c, m in rows %}
+<tr><td><strong>{{ c.name }}</strong>{% if c.server %} <span class="tiny muted">{{ c.server }}</span>{% endif %}</td>
+<td class="n">{{ c.level or "—" }}</td><td>{{ ui.cls(game, c.class_name) }} {{ c.class_name or "—" }}</td><td class="small">{{ c.race or "—" }}</td>
+<td>{% if m %}<a href="/roster/members/{{ m.id }}">{{ m.display_name }}</a>{% else %}<span class="muted small">unclaimed</span>{% endif %}</td>
+<td><div class="chips">{% if c.is_main %}<span class="pill gold">main</span>{% elif m %}<span class="pill">alt</span>{% endif %}{% if c.is_bank_mule %}<span class="pill tide">bank</span>{% endif %}</div></td></tr>
+{% endfor %}
+</tbody></table></div>
+{% else %}
+{{ ui.empty("banner", "No characters match", "Adjust the filters, or add your own characters so the guild knows who you play.", "/roster/me", "Add my characters") }}
+{% endif %}
+{% endblock %}

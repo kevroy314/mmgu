@@ -1,0 +1,75 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% from "archive/_itemwin.html" import itemwin %}
+{% block title %}{{ item.name }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="titles"><p class="eyebrow"><a href="/archive">The Archive</a></p><h1>{{ item.name }}</h1>
+    <p class="lede small">{% if finder %}First cataloged by {{ finder.display_name }}{% else %}Cataloged{% endif %} {{ item.created_at | reltime }}{% if item.patch_seen %} · seen in {{ item.patch_seen }}{% endif %}</p></div>
+  <div class="actions">
+    {% if can_stream %}<button class="btn" hx-post="/archive/items/{{ item.id }}/stream" hx-swap="none">{{ icon("beacon", 16) }} Show on stream</button>{% endif %}
+    <button class="btn" type="button" data-copy="/item {{ item.name }}">{{ icon("discord", 16) }} Copy /item</button>
+    {% if viewer.can("archive.edit") or item.first_cataloged_by == viewer.id %}<a class="btn" href="/archive/items/{{ item.id }}/edit">{{ icon("edit", 16) }} Edit</a>{% endif %}
+    {% if wiki %}<a class="btn ghost" href="{{ wiki }}" target="_blank" rel="noopener">Wiki ↗</a>{% endif %}
+  </div>
+</header>
+
+<div class="cols">
+  <div class="stack">
+    {% set extra_lines %}{% if drops %}<span><b>Drops from</b> {% for d in drops[:3] %}{{ d.creature or "?" }}{% if d.zone %} ({{ d.zone }}){% endif %}{{ ", " if not loop.last }}{% endfor %}{% if drops|length > 3 %} +{{ drops|length - 3 }} more{% endif %}</span>{% endif %}{% endset %}
+    {{ itemwin(item, L, extra=extra_lines if drops else None) }}
+    {% if item.description %}<p class="quote">{{ item.description }}</p>{% endif %}
+
+    <section class="section" id="drops">
+      <div class="section-head"><h2>Where it drops</h2><span class="muted small">{{ plural(drops | sum(attribute="count"), "report") }}</span></div>
+      {% if drops %}
+      <div class="table-wrap"><table class="t"><thead><tr><th>Creature</th><th>Zone</th><th class="n">Reports</th><th>Last</th><th></th></tr></thead><tbody>
+      {% for d in drops %}<tr><td>{% if d.creature %}<a href="/archive/loot?creature={{ d.creature | urlencode }}">{{ d.creature }}</a>{% else %}—{% endif %}</td>
+        <td>{% if d.zone %}<a href="/archive/loot?zone={{ d.zone | urlencode }}">{{ d.zone }}</a>{% else %}—{% endif %}</td>
+        <td class="n">{{ d.count }}</td><td class="small">{{ d.last | reltime }}</td>
+        <td>{% if viewer.can("archive.moderate") %}<form method="post" action="/archive/drops/{{ d.ids[0] }}/delete"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small ghost" title="Remove the latest report">{{ icon("x", 14) }}</button></form>{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<p class="muted small">No drop reports yet.</p>{% endif %}
+      {% if viewer.can("archive.catalog") %}
+      <form class="row" method="post" action="/archive/items/{{ item.id }}/drops">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input name="creature" type="text" list="creatures" placeholder="Dropped by (creature)" aria-label="Creature" style="flex:1;min-width:10rem">
+        <input name="zone" type="text" list="zones" placeholder="Zone" aria-label="Zone" style="flex:1;min-width:10rem">
+        <button class="btn">{{ icon("plus", 16) }} Report drop</button>
+      </form>
+      <datalist id="creatures">{% for c in creatures %}<option>{{ c }}</option>{% endfor %}</datalist>
+      <datalist id="zones">{% for z in zones %}<option>{{ z }}</option>{% endfor %}</datalist>
+      {% endif %}
+    </section>
+
+    {% for p in panels %}{{ p | safe }}{% endfor %}
+  </div>
+
+  <aside class="stack">
+    <section class="card"><h3>{{ icon("image", 16) }} Screenshots</h3>
+      {% if images %}<div class="thumbs">{% for im in images %}<a href="/uploads/{{ im.upload_id }}" target="_blank" hx-boost="false"><img src="/uploads/{{ im.upload_id }}" alt="Screenshot of {{ item.name }}" loading="lazy"></a>{% endfor %}</div>
+      {% else %}<p class="small muted">No screenshots yet.</p>{% endif %}
+      {% if viewer.can("archive.catalog") %}
+      <details class="fold"><summary class="small">Add a screenshot</summary>
+        <form class="stack" method="post" action="/archive/items/{{ item.id }}/images" enctype="multipart/form-data">
+          <input type="hidden" name="csrf" value="{{ csrf }}">{{ ui.screenshot_input("Screenshot", True) }}<button class="btn small">Upload</button></form></details>
+      {% endif %}
+    </section>
+    <section class="card"><h3>{{ icon("clock", 16) }} History</h3>
+      <div class="list">{% for rev, m in revisions %}<div class="small"><strong>{{ rev.note }}</strong> · {{ m.display_name if m else "system" }} · {{ rev.at | reltime }}</div>{% endfor %}</div>
+    </section>
+    {% if viewer.can("archive.moderate") %}
+    <section class="card"><h3>Officer tools</h3>
+      <form method="post" action="/archive/items/{{ item.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="btn small">{{ "Mark as current" if item.status == "stale" else "Mark as outdated (changed by a patch)" }}</button></form>
+      <form class="stack-sm" method="post" action="/archive/items/{{ item.id }}/merge"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <label class="small" for="merge-into">Duplicate? Merge this into:</label>
+        <input id="merge-into" name="into" type="text" placeholder="Exact name of the item to keep" list="item-names"
+               hx-get="/archive/suggest" hx-trigger="input changed delay:250ms" hx-target="#item-names" hx-select="#item-names" hx-swap="outerHTML" hx-push-url="false">
+        <datalist id="item-names"></datalist>
+        <button class="btn small danger" hx-confirm="Merge {{ item.name }} into the other item? Drops, images and bank records move over.">Merge</button></form>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+<nav class="tabs" aria-label="Steward's Office">
+  <a href="/steward" class="{{ 'on' if current_path == '/steward' }}">Modules &amp; add-ons</a>
+  {% if viewer.can("admin.settings") %}<a href="/steward/settings" class="{{ 'on' if current_path == '/steward/settings' }}">Settings &amp; channels</a>{% endif %}
+  <a href="/steward/members" class="{{ 'on' if current_path == '/steward/members' }}">Ranks &amp; duties</a>
+  {% if viewer.can("admin.permissions") %}<a href="/steward/permissions" class="{{ 'on' if current_path == '/steward/permissions' }}">Permissions</a>{% endif %}
+  {% if viewer.can("audit.view") %}<a href="/steward/audit" class="{{ 'on' if current_path == '/steward/audit' }}">Audit log</a>{% endif %}
+  <a href="/proposals">Suggested changes</a>
+</nav>

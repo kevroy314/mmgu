@@ -1,0 +1,22 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Permissions{% endblock %}
+{% block content %}
+{{ ui.page_head("Admin", "Who can do what", "Each action is open to a rank and everyone above it. Duties (Banker, Crafter…) can also grant an action regardless of rank.") }}
+{% include "steward/_tabs.html" %}
+<form class="stack" method="post" action="/steward/permissions">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% for group, rows in groups.items() %}
+  <section class="section"><h3>{{ group }}</h3>
+    <div class="table-wrap"><table class="t"><thead><tr><th>Action</th><th>Lowest rank</th><th>Also granted by duty</th></tr></thead><tbody>
+    {% for r in rows %}
+      <tr><td>{{ r.perm.label }} {% if r.changed %}<span class="pill gold">changed</span>{% endif %}<div class="tiny muted mono">{{ r.perm.key }}</div></td>
+        <td><select name="rank:{{ r.perm.key }}" aria-label="Lowest rank for {{ r.perm.label }}" {% if r.perm.key == "admin.permissions" %}disabled{% endif %}>
+          {% for k, l in ranks %}<option value="{{ k }}" {% if k == r.min_rank %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></td>
+        <td><div class="chips">{% for k, l, _ in duties %}<label class="chip"><input type="checkbox" name="duty:{{ r.perm.key }}" value="{{ k }}" {% if k in r.duties %}checked{% endif %}>{{ l }}</label>{% endfor %}</div></td></tr>
+    {% endfor %}
+    </tbody></table></div></section>
+  {% endfor %}
+  <div class="form-foot"><button class="btn primary">Save permissions</button></div>
+</form>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Search{% endblock %}
+{% block content %}
+{{ ui.page_head("Search the hall", "Results for “" ~ q ~ "”" if q else "Search") }}
+{% if hits %}
+<div class="table-wrap"><table class="t"><thead><tr><th>What</th><th>Kind</th></tr></thead><tbody>
+{% for h in hits %}<tr><td><a href="{{ h.url }}">{{ h.title }}</a>{% if h.subtitle %}<div class="tiny muted">{{ h.subtitle }}</div>{% endif %}</td><td class="muted">{{ h.kind }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% elif q %}
+{{ ui.empty("search", "Nothing found", "Try a shorter word, part of an item name, or a zone.") }}
+{% endif %}
+{% endblock %}

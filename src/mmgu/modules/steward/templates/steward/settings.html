@@ -1,0 +1,57 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+{{ ui.page_head("Admin", "Settings & channels") }}
+{% include "steward/_tabs.html" %}
+<form class="stack" method="post" action="/steward/settings" style="max-width:48rem">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <fieldset><legend>The hall</legend><div class="fields-2">
+  {% for key, label, kind, help in hall_fields %}
+    <div class="field">
+    {% if kind == "bool" %}
+      <label class="check"><input type="checkbox" name="{{ key }}" value="1" {% if values.get(key) %}checked{% endif %}> {{ label }}</label>
+    {% elif kind == "select" %}
+      <label for="{{ key }}">{{ label }}</label>
+      <select id="{{ key }}" name="{{ key }}"><option value="">Default ({{ hall.settings.default_role }})</option>
+        {% for r, rl in ranks %}<option value="{{ r }}" {% if values.get(key) == r %}selected{% endif %}>{{ rl }}</option>{% endfor %}</select>
+    {% else %}
+      <label for="{{ key }}">{{ label }}</label><input id="{{ key }}" name="{{ key }}" type="text" value="{{ values.get(key) or '' }}">
+    {% endif %}
+      <span class="hint">{{ help }}</span></div>
+  {% endfor %}
+  </div></fieldset>
+
+  <fieldset><legend>Discord channels</legend>
+    <p class="small muted">Paste channel ids (Discord → Settings → Advanced → Developer Mode, then right-click a channel → Copy Channel ID). Leave blank to use the default channel.</p>
+    <div class="fields-2">
+    {% for key, label, owner in channels %}
+      <div class="field"><label for="ch-{{ key }}">{{ label }}</label>
+        <input id="ch-{{ key }}" name="channels.{{ key }}" type="text" inputmode="numeric" value="{{ values.get('channels.' ~ key) or '' }}">
+        <span class="hint">{{ owner }}</span></div>
+    {% endfor %}
+    </div>
+  </fieldset>
+
+  {% for m, fields in module_fields %}
+  <fieldset><legend>{{ m.name }}</legend><div class="fields-2">
+    {% for f in fields %}{% set full = m.id ~ "." ~ f.key %}{% set val = values.get(full) if values.get(full) is not none else f.default %}
+      <div class="field">
+      {% if f.type == "bool" %}
+        <label class="check"><input type="checkbox" name="{{ full }}" value="1" {% if val %}checked{% endif %}> {{ f.label }}</label>
+      {% elif f.type == "select" %}
+        <label for="{{ full }}">{{ f.label }}</label><select id="{{ full }}" name="{{ full }}">{% for o in f.options %}<option {% if val == o %}selected{% endif %}>{{ o }}</option>{% endfor %}</select>
+      {% elif f.type == "textarea" %}
+        <label for="{{ full }}">{{ f.label }}</label><textarea id="{{ full }}" name="{{ full }}">{{ val or '' }}</textarea>
+      {% elif f.type == "secret" %}
+        <label for="{{ full }}">{{ f.label }}</label><input id="{{ full }}" name="{{ full }}" type="password" autocomplete="off" placeholder="{{ 'Saved; leave blank to keep' if values.get(full) else 'Not set' }}">
+      {% else %}
+        <label for="{{ full }}">{{ f.label }}</label><input id="{{ full }}" name="{{ full }}" type="{{ 'number' if f.type == 'int' else 'text' }}" value="{{ val if val is not none else '' }}">
+      {% endif %}
+        {% if f.help %}<span class="hint">{{ f.help }}</span>{% endif %}</div>
+    {% endfor %}
+  </div></fieldset>
+  {% endfor %}
+  <div class="form-foot"><button class="btn primary">Save settings</button></div>
+</form>
+{% endblock %}

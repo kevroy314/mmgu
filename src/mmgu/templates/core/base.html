@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Hall{% endblock %} · {{ hall.app_name }}</title>
+  <meta name="color-scheme" content="dark light">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/static/css/hall.css?v=1">
+  <link rel="icon" href="/static/img/crest.svg" type="image/svg+xml">
+  <script>try{var t=localStorage.getItem("mmgu-theme");if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <script src="/static/js/htmx.min.js" defer></script>
+  <script src="/static/js/app.js?v=1" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body hx-headers='{"X-CSRF-Token": "{{ csrf }}"}' hx-boost="true" hx-target="#main" hx-select="#main" hx-swap="outerHTML show:window:top"
+      {% if request.session.get('flash') %}data-flash='{{ request.session.pop("flash") | tojson }}'{% endif %}>
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+  <aside class="rail" id="rail">
+    <a class="crest" href="/" hx-boost="true">
+      <span class="crest-mark">{{ icon("wave", 26) }}</span>
+      <span class="crest-text">
+        <span class="crest-guild">{{ hall.guild_name }}</span>
+        <span class="crest-app">{{ hall.app_name }}</span>
+      </span>
+    </a>
+    <nav class="rooms" aria-label="Rooms of the hall">
+      {% for n in nav %}
+      <a class="room {% if current_path == n.href or (n.href != '/' and current_path.startswith(n.href)) %}is-here{% endif %}" href="{{ n.href }}">
+        {{ icon(n.icon, 20) }}
+        <span class="room-text"><span class="room-name">{{ n.label }}</span><span class="room-plain">{{ n.plain }}</span></span>
+      </a>
+      {% endfor %}
+    </nav>
+    <div class="rail-foot">
+      <button class="linklike" type="button" data-theme-toggle>{{ icon("sparkle", 16) }} <span>Switch light/dark</span></button>
+    </div>
+  </aside>
+
+  <div class="stage">
+    <header class="topbar">
+      <button class="icon-btn only-mobile" type="button" data-nav-toggle aria-controls="rail" aria-label="Open navigation">{{ icon("menu", 22) }}</button>
+      {% if viewer.is_authenticated %}
+      <form class="search" action="/search" method="get" role="search">
+        {{ icon("search", 18) }}
+        <input id="global-search" name="q" type="search" placeholder="Search items, members, listings…" autocomplete="off"
+               value="{{ request.query_params.get('q', '') if current_path == '/search' else '' }}"
+               hx-get="/search/quick" hx-trigger="input changed delay:250ms, search" hx-target="#quick-results" hx-select="#quick-results" hx-swap="outerHTML" hx-push-url="false">
+        <kbd class="only-wide">/</kbd>
+        <div id="quick-results" class="quick-results" hidden></div>
+      </form>
+      <a class="icon-btn bell" href="/notices" aria-label="Notices">{{ icon("bell", 20) }}
+        <span hx-get="/notices/count" hx-trigger="load, every 60s" hx-target="this" hx-select="this" hx-swap="outerHTML" hx-push-url="false"></span>
+      </a>
+      <a class="who" href="/me">
+        <span class="avatar">{% if viewer.member.avatar_url %}<img src="{{ viewer.member.avatar_url }}" alt="">{% else %}{{ viewer.name[:1] }}{% endif %}</span>
+        <span class="who-text"><span>{{ viewer.name }}</span><span class="rank rank-{{ viewer.rank }}">{{ viewer.rank | capitalize }}</span></span>
+      </a>
+      {% else %}
+      <span class="grow"></span>
+      <a class="btn" href="/login">Log in</a>
+      {% endif %}
+    </header>
+
+    <main id="main" tabindex="-1" data-title="{{ self.title() }} · {{ hall.app_name }}">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<dialog class="modal" id="modal"><div id="modal-body"></div></dialog>
+</body>
+</html>

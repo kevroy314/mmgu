@@ -1,0 +1,16 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Notices{% endblock %}
+{% block content %}
+{{ ui.page_head("For you", "Notices") }}
+{% if notices %}
+<div class="card"><div class="list">
+{% for n in notices %}
+  <div class="line">{{ icon("bell", 16, "muted") }}<div class="main">{% if n.url %}<a href="{{ n.url }}">{{ n.text }}</a>{% else %}{{ n.text }}{% endif %}</div>
+    <span class="tiny muted">{{ n.created_at | reltime }}</span>{% if not n.read %}<span class="pill tide">new</span>{% endif %}</div>
+{% endfor %}
+</div></div>
+{% else %}
+{{ ui.empty("bell", "No notices", "When someone claims your request, approves a bank withdrawal or a timer you watch opens, it shows up here (and in your Discord DMs if linked).") }}
+{% endif %}
+{% endblock %}

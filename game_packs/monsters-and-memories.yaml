@@ -1,0 +1,133 @@
+# Game pack: everything Hallkeeper knows about the game lives here, not in code.
+# When the game patches (new class, new tradeskill, new stat), edit this file and restart.
+# To override locally without touching the repo, copy it to data/game_pack.yaml.
+#
+# Sources: the Monsters & Memories community wiki (monstersandmemories.miraheze.org) and the
+# official Early Access FAQ, as of Early Access launch (Oct 2026). Entries marked "unverified"
+# are best guesses; correct them as the game becomes better documented.
+
+id: monsters-and-memories
+name: Monsters & Memories
+level_cap: 60
+
+servers:
+  - { name: Estaire, note: US West PvE }
+  - { name: Trem, note: US East PvE }
+  - { name: Tilustra, note: US East PvE 2 }
+  - { name: Kravvin, note: US PvP }
+  - { name: Nunavoth, note: US PvE, 3-box allowed }
+  - { name: Vespyra, note: EU PvE }
+
+# role: the usual group job, used to balance event sign-ups.
+classes:
+  - { name: Archer, abbr: ARC, role: dps }
+  - { name: Bard, abbr: BRD, role: support }
+  - { name: Beastmaster, abbr: BST, role: dps }
+  - { name: Cleric, abbr: CLR, role: healer }        # abbr unverified
+  - { name: Druid, abbr: DRU, role: healer }
+  - { name: Elementalist, abbr: ELE, role: dps }     # abbr unverified
+  - { name: Enchanter, abbr: ENC, role: support }    # abbr unverified
+  - { name: Fighter, abbr: FTR, role: tank }
+  - { name: Inquisitor, abbr: INQ, role: healer }
+  - { name: Monk, abbr: MNK, role: dps }             # abbr unverified
+  - { name: Necromancer, abbr: NEC, role: dps }      # abbr unverified
+  - { name: Paladin, abbr: PAL, role: tank }
+  - { name: Ranger, abbr: RNG, role: dps }
+  - { name: Rogue, abbr: ROG, role: dps }
+  - { name: Shadow Knight, abbr: SHD, role: tank }
+  - { name: Shaman, abbr: SHM, role: healer }        # abbr unverified
+  - { name: Spellblade, abbr: SPB, role: dps }
+  - { name: Wizard, abbr: WIZ, role: dps }
+
+races:
+  - Deep Dwarf
+  - Deep Elf
+  - Deep Gnome
+  - Dwarf
+  - Gnome
+  - Goblin
+  - Halfling
+  - High Elf
+  - Human
+  - Lizardman
+  - Ogre
+  - Troll
+  - Wood Elf
+
+deities: [Eltindra, Haradrel, Krivea, The Matswar, Relle, Sorophal, Tilustra, Trimminax, Vespyra]
+
+guild_ranks: [Leader, Officer, Member, Recruit]
+
+event_roles:
+  - { key: tank, label: Tank }
+  - { key: healer, label: Healer }
+  - { key: dps, label: Damage }
+  - { key: support, label: Support }
+  - { key: any, label: Flexible }
+
+tradeskills:
+  gathering: [Archaeology, Farming, Fishing, Herbalism, Lumberjacking, Mining, Skinning]
+  refining: [Fermenting, Smelting, Spinning, Stone Cutting, Tanning]
+  crafting:
+    [Alchemy, Blacksmithing, Brewing, Carpentry, Cooking, Disenchanting, Enchanting, Fletching,
+     Jewelcrafting, Leatherworking, Poison Making, Pottery, Spellcrafting, Tailoring, Tinkering,
+     Woodworking]
+  utility: [Animal Taming, Bind Wound, Navigation, Riding, Spycraft, Survival, Wagoneering, Wilderness]
+tradeskill_max: 300  # unverified; used only to scale progress bars
+
+items:
+  # EverQuest-style equipment slots; M&M uses the same layout as far as the wiki shows.
+  slots: [CHARM, EAR, HEAD, FACE, NECK, SHOULDERS, ARMS, BACK, WRIST, RANGE, HANDS, PRIMARY,
+          SECONDARY, FINGER, CHEST, LEGS, FEET, WAIST, AMMO]
+  flags:
+    - { key: magic, label: MAGIC ITEM }
+    - { key: lore, label: LORE ITEM }
+    - { key: unique, label: UNIQUE }
+    - { key: nodrop, label: NO DROP }
+    - { key: norent, label: NO RENT }
+    - { key: quest, label: QUEST ITEM }
+  sizes: [TINY, SMALL, MEDIUM, LARGE, GIANT]
+  # Weapon skill codes as they appear on the inspect window.
+  skills:
+    - { key: 1HS, label: 1H Slashing }
+    - { key: 2HS, label: 2H Slashing }
+    - { key: 1HB, label: 1H Blunt }
+    - { key: 2HB, label: 2H Blunt }
+    - { key: PIE, label: Piercing }
+    - { key: 2HP, label: 2H Piercing }
+    - { key: H2H, label: Hand to Hand }
+    - { key: ARC, label: Archery }
+    - { key: THR, label: Throwing }
+  stats:
+    - { key: str, label: STR }
+    - { key: sta, label: STA }
+    - { key: agi, label: AGI }
+    - { key: dex, label: DEX }
+    - { key: int, label: INT }
+    - { key: wis, label: WIS }
+    - { key: cha, label: CHA }
+    - { key: hp, label: HP }
+    - { key: mana, label: MANA }
+    - { key: hp_regen, label: HP Regen }
+    - { key: mana_regen, label: Mana Regen }
+    - { key: haste, label: Haste }
+  resists:
+    - { key: mr, label: SV Magic }
+    - { key: fr, label: SV Fire }
+    - { key: cr, label: SV Cold }
+    - { key: pr, label: SV Poison }
+    - { key: dr, label: SV Disease }
+    - { key: cor, label: SV Corruption }   # unverified meaning of "cor"
+    - { key: er, label: SV Electric }      # unverified meaning of "er"
+    - { key: hr, label: SV Holy }          # unverified meaning of "hr"
+  instrument_mods: [brass, percussion, singing, stringed, wind]
+  types: [Weapon, Armor, Jewelry, Shield, Container, Consumable, Tradeskill, Spell / Scroll, Quest, Misc]
+
+places:
+  cities: [Night Harbor, Underdocks, Ail'vorith, Faelindral]
+  zones: [Shaded Dunes, Sungreet Strand, Evershade Weald, Scarwood, Great Cavern Sea,
+          Tomb of the Last Wyrmsbane, Tel Ekir, Blacktide Bay, Rothold, Fallen Watch]
+
+wiki:
+  name: M&M Community Wiki
+  item_url: "https://monstersandmemories.miraheze.org/wiki/{name}"

@@ -1,0 +1,10 @@
+{% extends "core/base.html" %}
+{% block title %}Waiting{% endblock %}
+{% block content %}
+<div class="gate"><div class="card">
+  <p class="eyebrow">At the door</p>
+  <h1>Almost in</h1>
+  <p class="muted">You're signed in as {{ viewer.name }}, but you don't have a guild rank yet. An officer can give you one from the Muster Roll.</p>
+  <form method="post" action="/logout">{{ '' }}<input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn">Log out</button></form>
+</div></div>
+{% endblock %}

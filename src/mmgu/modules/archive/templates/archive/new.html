@@ -1,0 +1,110 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}{{ "Edit " ~ item.name if item else "Catalog an item" }}{% endblock %}
+{% block content %}
+{% set editing = item is defined and item %}
+{% if editing %}
+{{ ui.page_head("The Archive", "Edit " ~ item.name, "Every save keeps the previous version in the item's history.") }}
+{% else %}
+{{ ui.page_head("The Archive", "Catalog an item", "Screenshot an item's inspect window in game, then drop it here.") }}
+{% endif %}
+
+{% if not editing and not proposal and reader %}
+<section class="hero-card">
+  <h2>{{ icon("sparkle", 20) }} Read a screenshot</h2>
+  <p class="muted small">The screenshot reader fills in the form for you. You check it before anything is saved.</p>
+  <form class="stack" method="post" action="/archive/read" enctype="multipart/form-data" hx-disabled-elt="find button">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {{ ui.screenshot_input("Item screenshot", True) }}
+    <div class="fields-2">
+      <div class="field"><label for="r-creature">Dropped by (optional)</label><input id="r-creature" name="creature" type="text" list="creatures"></div>
+      <div class="field"><label for="r-zone">Zone (optional)</label><input id="r-zone" name="zone" type="text" list="zones"></div>
+    </div>
+    <div class="form-foot"><button class="btn primary">{{ icon("eye", 16) }} Read screenshot</button>
+      <span class="htmx-indicator small muted"><span class="spinner"></span> Reading… this can take up to a minute on a home GPU.</span></div>
+  </form>
+</section>
+<details class="fold"><summary>Or type it in by hand</summary>
+{% endif %}
+
+{% if proposal %}
+<div class="notice {{ 'gold' if proposal.source != 'manual' else '' }}">
+  <strong>{% if proposal.source != "manual" %}Read by {{ proposal.source }}. Check every field against the screenshot.{% else %}Fill in the fields from the screenshot.{% endif %}</strong>
+  {% for n in proposal.payload.get("notes") or [] %}<p class="small">{{ n }}</p>{% endfor %}
+  {% if proposal.error %}<p class="small muted">Reader error: {{ proposal.error }}</p>{% endif %}
+</div>
+{% endif %}
+{% if existing %}
+<div class="notice tide"><strong><a href="/archive/items/{{ existing.id }}">{{ existing.name }}</a> is already in the Archive.</strong>
+  <p class="small">Saving adds your screenshot and drop report to it. The existing stats are kept; edit the item if they're wrong.</p></div>
+{% endif %}
+
+<div class="{{ 'cols' if proposal and proposal.upload_id else '' }}">
+  {% if proposal and proposal.upload_id %}
+  <aside class="stack" style="position:sticky;top:5rem">
+    <img src="/uploads/{{ proposal.upload_id }}" alt="Uploaded screenshot" style="border:1px solid var(--rule);border-radius:4px">
+  </aside>
+  {% endif %}
+
+  <form class="stack" method="post" enctype="multipart/form-data" action="{{ '/archive/items/' ~ item.id ~ '/edit' if editing else '/archive/new' }}" style="order:-1">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    {% if proposal %}<input type="hidden" name="proposal_id" value="{{ proposal.id }}">{% endif %}
+
+    <fieldset><legend>The item</legend><div class="stack">
+      <div class="fields-2">
+        <div class="field"><label for="i-name">Name</label><input id="i-name" name="name" type="text" required maxlength="120" value="{{ data.get('name') or '' }}" autocomplete="off"></div>
+        <div class="field"><label for="i-type">Type</label><select id="i-type" name="item_type"><option value="">—</option>{% for t in game.item_types %}<option {% if data.get('item_type') == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="field"><span class="label">Flags</span><div class="chips">{% for f in game.flags %}<label class="chip"><input type="checkbox" name="flags" value="{{ f.key }}" {% if f.key in (data.get('flags') or []) %}checked{% endif %}>{{ f.label }}</label>{% endfor %}</div></div>
+      <div class="field"><span class="label">Slots</span><div class="chips">{% for s in game.slots %}<label class="chip"><input type="checkbox" name="slots" value="{{ s }}" {% if s in (data.get('slots') or []) %}checked{% endif %}>{{ s }}</label>{% endfor %}</div></div>
+    </div></fieldset>
+
+    <fieldset><legend>Combat</legend><div class="fields">
+      <div class="field"><label for="i-skill">Skill</label><select id="i-skill" name="skill"><option value="">—</option>{% for s in game.skills %}<option value="{{ s.key }}" {% if data.get('skill') == s.key %}selected{% endif %}>{{ s.label }}</option>{% endfor %}</select></div>
+      <div class="field"><label for="i-dmg">DMG</label><input id="i-dmg" name="damage" type="number" value="{{ data.get('damage') if data.get('damage') is not none else '' }}"></div>
+      <div class="field"><label for="i-delay">Atk Delay</label><input id="i-delay" name="delay" type="number" value="{{ data.get('delay') if data.get('delay') is not none else '' }}"></div>
+      <div class="field"><label for="i-ac">AC</label><input id="i-ac" name="ac" type="number" value="{{ data.get('ac') if data.get('ac') is not none else '' }}"></div>
+      <div class="field"><label for="i-wt">Weight</label><input id="i-wt" name="weight" type="number" step="0.1" value="{{ data.get('weight') if data.get('weight') is not none else '' }}"></div>
+      <div class="field"><label for="i-size">Size</label><select id="i-size" name="size"><option value="">—</option>{% for s in game.sizes %}<option {% if (data.get('size') or '') == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+    </div></fieldset>
+
+    <fieldset><legend>Stats</legend><div class="fields">
+      {% for s in game.stats %}<div class="field"><label for="st-{{ s.key }}">{{ s.label }}</label><input id="st-{{ s.key }}" name="stat_{{ s.key }}" type="number" value="{{ (data.get('stats') or {}).get(s.key, '') }}"></div>{% endfor %}
+    </div>
+    <details class="fold" {% if data.get('resists') %}open{% endif %}><summary class="small">Resists</summary><div class="fields" style="margin-top:.6rem">
+      {% for s in game.resists %}<div class="field"><label for="rs-{{ s.key }}">{{ s.label }}</label><input id="rs-{{ s.key }}" name="res_{{ s.key }}" type="number" value="{{ (data.get('resists') or {}).get(s.key, '') }}"></div>{% endfor %}
+    </div></details></fieldset>
+
+    <fieldset><legend>Who can use it</legend><div class="stack">
+      {% set cls = data.get('classes') or [] %}
+      <label class="check"><input type="checkbox" name="all_classes" value="1" {% if 'ALL' in cls %}checked{% endif %}> All classes</label>
+      <div class="chips">{% for c in game.classes %}<label class="chip" title="{{ c.name }}"><input type="checkbox" name="classes" value="{{ c.name }}" {% if c.name in cls %}checked{% endif %}>{{ c.abbr }}</label>{% endfor %}</div>
+      <div class="field"><label for="i-races">Races</label><input id="i-races" name="races" type="text" value="{{ (data.get('races') or ['ALL']) | join(', ') }}"><span class="hint">ALL, or a comma-separated list.</span></div>
+    </div></fieldset>
+
+    <fieldset><legend>Effects &amp; notes</legend><div class="stack">
+      <div class="field"><label for="i-effects">Effects</label><textarea id="i-effects" name="effects" rows="2" placeholder="One per line, e.g. Minor Shielding (Worn)">{{ (data.get('effects') or []) | join("\n") }}</textarea></div>
+      <div class="field"><label for="i-desc">Guild notes</label><textarea id="i-desc" name="description" rows="2" placeholder="Anything worth knowing: quest use, who wants it, camp tips">{{ data.get('description') or '' }}</textarea></div>
+      <div class="field"><label for="i-patch">Seen in patch / date</label><input id="i-patch" name="patch_seen" type="text" placeholder="e.g. EA 1.0" value="{{ data.get('patch_seen') or '' }}"></div>
+      {% if data.get('raw_text') %}<details class="fold"><summary class="small">Text the reader saw</summary><textarea name="raw_text" rows="6" class="mono tiny">{{ data.get('raw_text') }}</textarea></details>{% endif %}
+    </div></fieldset>
+
+    {% if not editing %}
+    <fieldset><legend>Where it dropped</legend><div class="fields-2">
+      <div class="field"><label for="i-creature">Creature</label><input id="i-creature" name="creature" type="text" list="creatures" value="{{ data.get('_creature') or '' }}"></div>
+      <div class="field"><label for="i-zone">Zone</label><input id="i-zone" name="zone" type="text" list="zones" value="{{ data.get('_zone') or '' }}"></div>
+      <div class="field"><label for="i-dnote">Note</label><input id="i-dnote" name="drop_note" type="text" placeholder="Optional, e.g. rare, night spawn"></div>
+    </div></fieldset>
+    {% if not proposal %}{{ ui.screenshot_input("Screenshot (optional)") }}{% endif %}
+    {% else %}
+    <div class="field"><label for="i-note">What changed?</label><input id="i-note" name="note" type="text" placeholder="e.g. fixed AC, patch changed stats"></div>
+    {% endif %}
+
+    <div class="form-foot"><button class="btn primary">{{ "Save changes" if editing else ("Add to the Archive" if not existing else "Add my screenshot and drop") }}</button>
+      <a class="btn ghost" href="{{ '/archive/items/' ~ item.id if editing else '/archive' }}">Cancel</a></div>
+  </form>
+</div>
+{% if not editing and not proposal and reader %}</details>{% endif %}
+<datalist id="creatures">{% for c in creatures %}<option>{{ c }}</option>{% endfor %}</datalist>
+<datalist id="zones">{% for z in zones %}<option>{{ z }}</option>{% endfor %}</datalist>
+{% endblock %}

@@ -1,0 +1,16 @@
+<form class="card" method="get" action="/archive" hx-get="/archive" hx-target="#results" hx-select="#results" hx-swap="outerHTML"
+      hx-trigger="change, input changed delay:300ms from:input[type=search]" hx-push-url="true" style="gap:.8rem">
+  <div class="row">
+    <input type="search" name="q" value="{{ f.q }}" placeholder="Name, stat, effect, creature…" aria-label="Search items" style="flex:1;min-width:12rem">
+  </div>
+  <div class="fields">
+    <div class="field"><label for="f-slot">Slot</label><select id="f-slot" name="slot"><option value="">Any</option>{% for s in game.slots %}<option {% if f.slot == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-cls">Usable by</label><select id="f-cls" name="cls"><option value="">Any class</option>{% for c in game.classes %}<option {% if f.cls == c.name %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-stat">Has stat</label><select id="f-stat" name="stat"><option value="">Any</option>{% for s in game.stats + game.resists %}<option value="{{ s.key }}" {% if f.stat == s.key %}selected{% endif %}>{{ s.label }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-type">Type</label><select id="f-type" name="item_type"><option value="">Any</option>{% for t in game.item_types %}<option {% if f.item_type == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-flag">Flag</label><select id="f-flag" name="flag"><option value="">Any</option>{% for fl in game.flags %}<option value="{{ fl.key }}" {% if f.flag == fl.key %}selected{% endif %}>{{ fl.label }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-zone">Drops in zone</label><input id="f-zone" name="zone" type="text" list="zones" value="{{ f.zone }}"></div>
+  </div>
+  <datalist id="zones">{% for z in zones %}<option>{{ z }}</option>{% endfor %}</datalist>
+  <noscript><button class="btn">Search</button></noscript>
+</form>

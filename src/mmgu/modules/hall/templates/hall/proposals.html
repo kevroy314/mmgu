@@ -1,0 +1,17 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Suggested changes{% endblock %}
+{% block content %}
+{{ ui.page_head("Needs a person", "Suggested changes", "Screenshots read by AI, imports from companion tools and MCP requests wait here until someone checks them.") }}
+{% if proposals %}
+<div class="table-wrap"><table class="t"><thead><tr><th>Suggestion</th><th>From</th><th>When</th><th></th></tr></thead><tbody>
+{% for p in proposals %}
+<tr><td>{{ p.summary or p.kind }}<div class="tiny muted">{{ p.kind }}</div></td><td class="small muted">{{ p.source }}</td><td class="small">{{ p.created_at | reltime }}</td>
+<td><div class="btn-row">{% if p.payload.review_url %}<a class="btn small primary" href="{{ p.payload.review_url }}">Review</a>{% endif %}
+<form method="post" action="/proposals/{{ p.id }}/reject"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small ghost">Discard</button></form></div></td></tr>
+{% endfor %}
+</tbody></table></div>
+{% else %}
+{{ ui.empty("check", "Nothing waiting", "All suggested changes have been reviewed.") }}
+{% endif %}
+{% endblock %}

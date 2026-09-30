@@ -1,0 +1,23 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}The Archive{% endblock %}
+{% block content %}
+{% call ui.page_head("Item catalog", "The Archive", "Every item the guild has seen: stats, who can use it, and where it drops.") %}
+  {% if viewer.can("archive.catalog") %}<a class="btn primary" href="/archive/new">{{ icon("upload", 16) }} Catalog an item</a>{% endif %}
+  <a class="btn" href="/archive/loot">{{ icon("skull", 16) }} Loot tables</a>
+{% endcall %}
+<div class="cols">
+  <div class="stack">
+    {% include "archive/_filters.html" %}
+    {% include "archive/_results.html" %}
+  </div>
+  <aside class="stack">
+    <section class="card"><h3>By the numbers</h3>
+      <div class="statbar"><div class="stat"><span class="v">{{ total }}</span><span class="k">items cataloged</span></div></div></section>
+    {% if top %}<section class="card"><h3>{{ icon("sparkle", 16) }} Top archivists</h3>
+      <div class="list">{% for name, n in top %}<div class="line"><div class="main">{{ name }}</div><span class="num muted">{{ n }}</span></div>{% endfor %}</div></section>{% endif %}
+    <section class="card"><h3>From Discord</h3>
+      <p class="small muted"><code>/item &lt;name&gt;</code> posts an item card. Right-click a screenshot → <em>Apps → Catalog item</em> to add one.</p></section>
+  </aside>
+</div>
+{% endblock %}

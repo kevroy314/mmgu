@@ -1,0 +1,20 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Loot tables{% endblock %}
+{% block content %}
+{{ ui.page_head("The Archive", "Loot tables", "What drops from a creature or in a zone, built from the guild's drop reports.") }}
+<form class="row" method="get" action="/archive/loot">
+  <input name="creature" type="text" list="creatures" placeholder="Creature" value="{{ creature }}" aria-label="Creature" style="max-width:18rem">
+  <input name="zone" type="text" list="zones" placeholder="Zone" value="{{ zone }}" aria-label="Zone" style="max-width:18rem">
+  <button class="btn">Show loot</button>
+</form>
+<datalist id="creatures">{% for c in creatures %}<option>{{ c }}</option>{% endfor %}</datalist>
+<datalist id="zones">{% for z in zones %}<option>{{ z }}</option>{% endfor %}</datalist>
+{% if rows %}
+<div class="table-wrap"><table class="t"><thead><tr><th>Item</th><th>Slot</th><th class="n">Reports</th></tr></thead><tbody>
+{% for i, n in rows %}<tr><td><a href="/archive/items/{{ i.id }}">{{ i.name }}</a></td><td class="small">{{ " ".join(i.slots or []) }}</td><td class="n">{{ n }}</td></tr>{% endfor %}
+</tbody></table></div>
+{% elif creature or zone %}
+{{ ui.empty("skull", "No drops recorded there yet", "When members report drops from this creature or zone, they'll be listed here.") }}
+{% endif %}
+{% endblock %}

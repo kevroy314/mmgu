@@ -1,0 +1,6 @@
+<section class="card">
+  <div class="row-between"><h3>{{ icon("scroll", 18) }} Recent discoveries</h3><a class="small" href="/archive">Archive</a></div>
+  <div class="statbar"><div class="stat"><span class="v">{{ total }}</span><span class="k">items</span></div><div class="stat"><span class="v">{{ drops }}</span><span class="k">drop reports</span></div></div>
+  {% if recent %}<div class="list">{% for i, m in recent %}<div class="line"><div class="main"><a href="/archive/items/{{ i.id }}">{{ i.name }}</a><div class="tiny muted">{{ " ".join(i.slots or []) }}{% if m %} · found by {{ m.display_name }}{% endif %}</div></div><span class="tiny muted">{{ i.created_at | reltime }}</span></div>{% endfor %}</div>
+  {% else %}<p class="small muted">Nothing cataloged yet. <a href="/archive/new">Catalog the first item</a>.</p>{% endif %}
+</section>

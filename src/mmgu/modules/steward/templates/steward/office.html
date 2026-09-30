@@ -1,0 +1,51 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Steward's Office{% endblock %}
+{% block content %}
+{{ ui.page_head("Admin", "Steward's Office", "Open or close rooms of the hall, turn on add-ons, and manage who can do what.") }}
+{% include "steward/_tabs.html" %}
+<div class="statbar">
+  <div class="stat"><span class="v">{{ counts.members }}</span><span class="k">active members</span></div>
+  <div class="stat"><span class="v">{{ enabled | length }}</span><span class="k">rooms open</span></div>
+  <div class="stat"><span class="v">{{ counts.audit }}</span><span class="k">audit entries</span></div>
+  <div class="stat"><span class="v" style="color:var({{ '--tide' if bot_online else '--muted' }})">{{ "Online" if bot_online else "Offline" }}</span><span class="k">Discord bot</span></div>
+</div>
+
+{% if broken %}<div class="notice blood"><strong>Some modules failed to load</strong>
+  {% for k, err in broken.items() %}<p class="small"><code>{{ k }}</code>: {{ err }}</p>{% endfor %}
+  <p class="tiny muted">The rest of the hall works. Check the server logs for the full error.</p></div>{% endif %}
+{% for kind, title, lede in [("feature", "Rooms of the hall", "Built-in features. Close any the guild doesn't use."),
+                              ("addon", "Add-ons", "Optional extras. Some touch the game's files or automate reading game data, so a leader must accept responsibility before turning them on.")] %}
+<section class="section">
+  <div class="section-head"><h2>{{ title }}</h2><span class="muted small">{{ lede }}</span></div>
+  <div class="grid-wide">
+  {% for m in modules if m.kind == kind %}
+    {% set on = m.id in enabled %}
+    <article class="card">
+      <div class="row-between"><h3>{{ m.name }}</h3>
+        <span class="row">{% if m.tos_risk == "high" %}<span class="pill blood">{{ icon("warn", 12) }} ToS risk</span>{% elif m.tos_risk == "caution" %}<span class="pill ember">{{ icon("warn", 12) }} Check ToS</span>{% endif %}
+        <span class="pill {{ 'tide' if on else '' }}">{{ "Open" if on else "Closed" }}</span></span></div>
+      <p class="small muted">{{ m.plain_name }}</p>
+      <p class="small">{{ m.description }}</p>
+      {% if m.requires %}<p class="tiny muted">Needs: {{ m.requires | join(", ") }}</p>{% endif %}
+      {% if viewer.can("admin.modules") %}
+      <form class="stack-sm" method="post" action="/steward/modules/{{ m.id }}">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <input type="hidden" name="enable" value="{{ '0' if on else '1' }}">
+        {% if not on and m.needs_acknowledgement %}
+          <div class="notice {{ 'blood' if m.tos_risk == 'high' else '' }}">
+            <strong>Before you turn this on</strong>
+            <p class="small">{{ m.tos_notice }}</p>
+            <label class="check small"><input type="checkbox" name="ack" value="yes" required> I've read this. Using it is my guild's decision and responsibility.</label>
+          </div>
+        {% endif %}
+        {% if on and acks.get(m.id) %}<p class="tiny muted">Terms notice accepted {{ acks[m.id].at[:10] }}.</p>{% endif %}
+        <div><button class="btn small {{ 'danger' if on else 'primary' }}">{{ "Close" if on else "Open" }} {{ m.name }}</button></div>
+      </form>
+      {% endif %}
+    </article>
+  {% endfor %}
+  </div>
+</section>
+{% endfor %}
+{% endblock %}

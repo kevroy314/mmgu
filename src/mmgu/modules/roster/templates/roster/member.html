@@ -1,0 +1,63 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% from "roster/_charform.html" import charform %}
+{% block title %}{{ member.display_name }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="row" style="gap:1rem">
+    <span class="avatar" style="width:4rem;height:4rem;font-size:1.6rem">{% if member.avatar_url %}<img src="{{ member.avatar_url }}" alt="">{% else %}{{ member.display_name[:1] }}{% endif %}</span>
+    <div class="titles"><p class="eyebrow">The Muster Roll</p><h1>{{ member.display_name }}</h1>
+      <div class="chips"><span class="pill gold">{{ their_rank | capitalize }}</span>{% for d in their_duties %}<span class="pill tide">{{ d }}</span>{% endfor %}
+      {% if member.status != "active" %}<span class="pill blood">{{ member.status }}</span>{% endif %}</div></div>
+  </div>
+  {% if viewer.can("members.manage") %}<div class="actions"><a class="btn small" href="/steward/members">Change rank</a></div>{% endif %}
+</header>
+
+<div class="cols">
+  <div class="stack">
+    <section class="section">
+      <div class="section-head"><h2>Characters</h2></div>
+      {% if chars %}
+      <div class="grid">
+      {% for c in chars %}
+        <article class="card">
+          <div class="row-between"><h3>{{ c.name }}</h3><div class="chips">{% if c.is_main %}<span class="pill gold">main</span>{% else %}<span class="pill">alt</span>{% endif %}{% if c.is_bank_mule %}<span class="pill tide">bank</span>{% endif %}</div></div>
+          <p class="meta"><span>{{ ("Level " ~ c.level) if c.level else "Level ?" }}</span><span>{{ c.class_name or "Class ?" }}</span>{% if c.race %}<span>{{ c.race }}</span>{% endif %}{% if c.server %}<span>{{ c.server }}</span>{% endif %}</p>
+          {% if c.notes %}<p class="small muted">{{ c.notes }}</p>{% endif %}
+          {% if can_edit %}
+          <details class="fold"><summary class="small">Edit</summary>
+            {{ charform(game, csrf, "/roster/characters/" ~ c.id, c, can_mule=viewer.can("vault.manage") or viewer.can("characters.edit_any")) }}
+            <form method="post" action="/roster/characters/{{ c.id }}/retire" style="margin-top:.5rem"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small danger" hx-confirm="Retire {{ c.name }} from the roll?">Retire character</button></form>
+          </details>
+          {% endif %}
+        </article>
+      {% endfor %}
+      </div>
+      {% else %}
+      {{ ui.empty("banner", "No characters yet", "Add a main and any alts so the guild knows who you play." if can_edit else "This member hasn't added any characters.") }}
+      {% endif %}
+      {% if can_edit %}
+      <section class="card"><h3>{{ icon("plus", 16) }} Add a character</h3>
+        {{ charform(game, csrf, "/roster/characters", None, member.id, default_server, viewer.can("vault.manage") or viewer.can("characters.edit_any"), "Add character") }}
+      </section>
+      {% endif %}
+    </section>
+    {% for p in panels %}{{ p | safe }}{% endfor %}
+  </div>
+
+  <div class="stack">
+    <section class="card"><h3>About</h3>
+      <p class="small muted">Joined {{ member.created_at | reltime }}{% if member.last_seen_at %} · seen {{ member.last_seen_at | reltime }}{% endif %}</p>
+      {% if member.timezone %}<p class="small">Time zone: {{ member.timezone }}</p>{% endif %}
+    </section>
+    {% if viewer.can("members.notes") %}
+    <section class="card" id="notes"><h3>{{ icon("eye", 16) }} Officer notes</h3>
+      <p class="tiny muted">Only officers and leaders can read these.</p>
+      <div class="list">{% for n, author in notes %}<div><p class="small">{{ n.text | nl2br }}</p><p class="tiny muted">{{ author.display_name if author else "?" }} · {{ n.created_at | reltime }}</p></div>{% endfor %}</div>
+      <form class="stack-sm" method="post" action="/roster/members/{{ member.id }}/notes"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <textarea name="text" rows="3" placeholder="Add a note" aria-label="Officer note"></textarea><button class="btn small">Add note</button></form>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

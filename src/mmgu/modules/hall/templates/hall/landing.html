@@ -1,0 +1,14 @@
+{% extends "core/base.html" %}
+{% block title %}Welcome{% endblock %}
+{% block content %}
+<div class="gate">
+  <div class="card">
+    <span class="crest-mark" style="width:4rem;height:4rem">{{ icon("wave", 36) }}</span>
+    <p class="eyebrow">{{ hall.app_name }}</p>
+    <h1>{{ hall.guild_name }}</h1>
+    <p class="muted">The guild hall: item archive, guild bank, notice board, crafters, events and spawn timers.</p>
+    <div class="btn-row"><a class="btn primary" href="/login">Enter the hall</a>
+    {% if viewer.can("archive.view") %}<a class="btn" href="/archive">Browse the Archive</a>{% endif %}</div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}{{ "Edit " ~ ev.title if ev else "Schedule an event" }}{% endblock %}
+{% block content %}
+{% if ev %}
+{{ ui.page_head("The War Table", "Edit " ~ ev.title, "Changing the start time tells everyone who signed up.") }}
+{% else %}
+{{ ui.page_head("The War Table", "Schedule an event", "Raids, group nights, crafting parties: anything the guild should turn up for.") }}
+{% endif %}
+
+<form id="event-form" class="stack" method="post" action="{{ '/events/' ~ ev.id ~ '/edit' if ev else '/events/new' }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="tz_name" value="">
+  <input type="hidden" name="tz_offset" value="">
+
+  <fieldset><legend>What and when</legend><div class="stack">
+    <div class="fields-2">
+      <div class="field"><label for="e-title">Title</label>
+        <input id="e-title" name="title" type="text" required maxlength="120" value="{{ data.get('title') or '' }}" placeholder="e.g. Tomb of the Last Wyrmsbane clear"></div>
+      <div class="field"><span class="label">Kind</span>
+        <div class="chips">{% for k in kinds %}<label class="chip"><input type="radio" name="kind" value="{{ k }}" {% if data.get('kind') == k %}checked{% endif %}>{{ k }}</label>{% endfor %}</div></div>
+    </div>
+    <div class="fields-2">
+      <div class="field"><label for="e-start">Starts</label>
+        <input id="e-start" name="starts_at" type="datetime-local" required value="{{ local_start }}" data-utc="{{ data.starts_at.isoformat() ~ 'Z' if data.get('starts_at') else '' }}"></div>
+      <div class="field"><label for="e-end">Ends (optional)</label>
+        <input id="e-end" name="ends_at" type="datetime-local" value="{{ local_end }}" data-utc="{{ data.ends_at.isoformat() ~ 'Z' if data.get('ends_at') else '' }}"></div>
+    </div>
+    <p class="hint small muted" data-tz-note>Times are in {{ profile_tz or "UTC" }}{% if not profile_tz %} (set your time zone on <a href="/me">your profile</a> to use your own){% endif %}.</p>
+    {% if not ev %}
+    <div class="row">
+      <label class="check"><input type="checkbox" name="repeat" value="1"> Repeat weekly</label>
+      <label class="row small" style="gap:.4rem">for <input name="repeat_weeks" type="number" min="1" max="{{ max_weeks }}" value="4" style="width:5rem" aria-label="Number of extra weeks"> more weeks</label>
+    </div>
+    <p class="hint tiny muted">Makes a separate event for each week (same local time, even across daylight-saving changes). Edit or cancel each one on its own.</p>
+    {% endif %}
+  </div></fieldset>
+
+  <fieldset><legend>Where and who</legend><div class="stack">
+    <div class="fields-2">
+      <div class="field"><label for="e-zone">Zone or meeting place</label>
+        <input id="e-zone" name="zone" type="text" list="e-zones" maxlength="120" value="{{ data.get('zone') or '' }}" placeholder="e.g. Scarwood, at the ferry dock">
+        <datalist id="e-zones">{% for z in zones %}<option>{{ z }}</option>{% endfor %}</datalist></div>
+      <div class="field"><label for="e-leader">Leader</label>
+        <select id="e-leader" name="leader_id" {% if ev and not viewer.can("events.manage") %}disabled{% endif %}>
+          {% for m in members %}<option value="{{ m.id }}" {% if m.id == data.get('leader_id') %}selected{% endif %}>{{ m.display_name }}</option>{% endfor %}
+        </select></div>
+    </div>
+    <div class="fields">
+      <div class="field"><label for="e-cap">Spots (optional)</label><input id="e-cap" name="capacity" type="number" min="1" max="1000" value="{{ data.get('capacity') or '' }}"><span class="hint">Extra sign-ups go to the bench.</span></div>
+      <div class="field"><label for="e-min">Lowest level</label><input id="e-min" name="min_level" type="number" min="1" value="{{ data.get('min_level') or '' }}"></div>
+      <div class="field"><label for="e-max">Highest level</label><input id="e-max" name="max_level" type="number" min="1" value="{{ data.get('max_level') or '' }}"></div>
+    </div>
+    <div class="field"><span class="label">Roles wanted (optional)</span>
+      <div class="fields">{% for r in roles %}
+        <div class="field"><label for="e-role-{{ r.key }}">{{ r.label }}</label><input id="e-role-{{ r.key }}" name="role_{{ r.key }}" type="number" min="0" max="500" value="{{ (data.get('roles') or {}).get(r.key) or '' }}"></div>
+      {% endfor %}</div>
+      <span class="hint">The roster warns when a role is short.</span></div>
+    <div class="field"><label for="e-desc">Details</label>
+      <textarea id="e-desc" name="description" rows="5" placeholder="What to bring, where to meet, loot rules…">{{ data.get('description') or '' }}</textarea></div>
+  </div></fieldset>
+
+  <div class="form-foot">
+    <button class="btn primary">{{ icon("check", 16) }} {{ "Save changes" if ev else "Schedule event" }}</button>
+    <a class="btn ghost" href="{{ '/events/' ~ ev.id if ev else '/events' }}">Cancel</a>
+  </div>
+</form>
+<script>
+(function () {
+  var f = document.getElementById("event-form");
+  if (!f) return;
+  var tz = "";
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) {}
+  function pad(n) { return String(n).padStart(2, "0"); }
+  f.querySelectorAll("input[data-utc]").forEach(function (i) {
+    if (!i.dataset.utc) return;
+    var d = new Date(i.dataset.utc);
+    if (!isNaN(d)) i.value = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  });
+  function sync() {
+    f.tz_name.value = tz;
+    var v = f.starts_at.value;
+    f.tz_offset.value = String((v ? new Date(v) : new Date()).getTimezoneOffset());
+  }
+  sync();
+  f.starts_at.addEventListener("change", sync);
+  var note = f.querySelector("[data-tz-note]");
+  if (note) note.textContent = "Times are in your time zone" + (tz ? " (" + tz + ")" : "") + ".";
+})();
+</script>
+{% endblock %}

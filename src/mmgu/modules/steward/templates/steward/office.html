@@ -40,7 +40,8 @@
           </div>
         {% endif %}
         {% if on and acks.get(m.id) %}<p class="tiny muted">Terms notice accepted {{ acks[m.id].at[:10] }}.</p>{% endif %}
-        <div><button class="btn small {{ 'danger' if on else 'primary' }}">{{ "Close" if on else "Open" }} {{ m.name }}</button></div>
+        <div class="btn-row"><button class="btn small {{ 'danger' if on else 'primary' }}">{{ "Close" if on else "Open" }} {{ m.name }}</button>
+          {% if on and m.admin_url %}<a class="btn small" href="{{ m.admin_url }}">Settings &amp; setup</a>{% endif %}</div>
       </form>
       {% endif %}
     </article>

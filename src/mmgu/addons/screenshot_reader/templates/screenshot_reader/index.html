@@ -1,0 +1,73 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Screenshot Reader{% endblock %}
+{% block content %}
+{% call ui.page_head("Add-on", "Screenshot Reader", "A vision model reads item and bank screenshots and fills in the form. A person always checks the result before it's saved.") %}
+<a class="btn ghost" href="/steward/settings#screenshot_reader">{{ icon("gear", 16) }} Change settings</a>
+{% endcall %}
+
+<div class="cols">
+  <section class="stack">
+    <div class="card stack-sm">
+      <h2>How it's set up</h2>
+      <table class="t"><tbody>
+        <tr><th>Reader</th><td>{% if provider == "anthropic" %}Claude (<code>{{ anthropic_model }}</code>){% else %}Ollama (<code>{{ ollama_model }}</code>){% endif %}</td></tr>
+        {% if provider == "anthropic" %}
+        <tr><th>API key</th><td>{% if has_key %}<span class="pill tide">set</span>{% else %}<span class="pill blood">missing</span> add one in settings{% endif %}</td></tr>
+        {% else %}
+        <tr><th>Ollama address</th><td><code>{{ ollama_url }}</code></td></tr>
+        {% endif %}
+      </tbody></table>
+      {% if provider != "anthropic" %}
+      <div class="row">
+        <button class="btn" hx-post="/addons/screenshot-reader/check" hx-target="#ollama-check" hx-select="#ollama-check" hx-swap="outerHTML" hx-push-url="false" hx-disabled-elt="this">{{ icon("link", 16) }} Check connection</button>
+        <span class="htmx-indicator small muted"><span class="spinner"></span> Asking Ollama…</span>
+      </div>
+      <div id="ollama-check"></div>
+      {% endif %}
+    </div>
+
+    <div class="card stack-sm">
+      <h2>Test the reader</h2>
+      <p class="small muted">Upload a screenshot to see exactly what the model returns. Nothing is saved. Useful when trying another model. The first read after the model has been idle can take a minute while it loads.</p>
+      <form class="stack" method="post" action="/addons/screenshot-reader/test" enctype="multipart/form-data" hx-push-url="false" hx-disabled-elt="find button">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        {{ ui.screenshot_input("Screenshot", True) }}
+        <div class="field"><span class="label">What's in it</span>
+          <div class="chips">
+            <label class="chip"><input type="radio" name="kind" value="item" {% if not result or result.kind == "item" %}checked{% endif %}>An item's inspect window</label>
+            <label class="chip"><input type="radio" name="kind" value="bank" {% if result and result.kind == "bank" %}checked{% endif %}>A bank or bag</label>
+          </div>
+        </div>
+        <div class="form-foot"><button class="btn primary">{{ icon("eye", 16) }} Read it</button>
+          <span class="htmx-indicator small muted"><span class="spinner"></span> Reading… up to a minute on a home GPU.</span></div>
+      </form>
+    </div>
+  </section>
+
+  <section class="stack" id="reader-result">
+    {% if result %}
+      {% if result.ok %}
+      <div class="notice tide"><strong>Read by {{ result.source }} in {{ result.seconds }} s</strong>
+        {% for n in result.notes %}<p class="small">{{ n }}</p>{% endfor %}
+      </div>
+      <h3>What the model returned</h3>
+      <pre class="sr-json">{{ result.json }}</pre>
+      {% if result.fields %}
+      <h3>What the catalog form gets</h3>
+      <p class="small muted">Gaps the model left are filled from the text it transcribed; the Archive then tidies names and classes when someone saves.</p>
+      <pre class="sr-json">{{ result.fields }}</pre>
+      {% endif %}
+      {% else %}
+      <div class="notice blood"><strong>{{ icon("warn", 16) }} The reader failed</strong><p class="small">{{ result.error }}</p></div>
+      {% endif %}
+    {% else %}
+    <div class="card-flat stack-sm">
+      <h2>Where it's used</h2>
+      <p class="small">Once this add-on is on, members see <strong>Read a screenshot</strong> on the Archive's <a href="/archive/new">Catalog an item</a> page{% if "vault" in enabled %}, and bankers can read bank screenshots in the Vault{% endif %}. What the model reads becomes a suggestion; nothing goes into the catalog until someone checks it and presses Save.</p>
+      <p class="small muted">Tip: crop the screenshot to the item window. Small, sharp text reads far better than a whole 4K screen.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+/* The War Table: event rows, the event hero, role columns. Uses hall.css tokens only. */
+.ev-row { display: flex; gap: 1rem; align-items: center; flex-direction: row; }
+.ev-row .main { flex: 1; min-width: 0; }
+.ev-row h3 { margin: 0; }
+.ev-row.ev-cancelled { opacity: .65; }
+.ev-row.ev-cancelled h3 a { text-decoration: line-through; }
+.ev-row.ev-active { border-color: var(--gold-soft); }
+.ev-side { display: flex; flex-direction: column; align-items: flex-end; gap: .4rem; text-align: right; }
+.ev-count { font-size: .9rem; color: var(--muted); white-space: nowrap; }
+.ev-count b { color: var(--ink); font-size: 1.1rem; }
+.ev-date { flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 3.6rem;
+  padding: .35rem 0; border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface-2); line-height: 1.05; }
+.ev-date .wd, .ev-date .mo { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.ev-date .dy { font-family: var(--font-display); font-size: 1.5rem; color: var(--gold); }
+.ev-hero { display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap; }
+.ev-hero .ev-date { width: 4.4rem; }
+.ev-hero .ev-date .dy { font-size: 2rem; }
+.ev-when { font-family: var(--font-display); font-size: 1.35rem; line-height: 1.25; }
+.ev-count-down { font-size: 1.05rem; }
+.ev-count-down time { font-variant-numeric: tabular-nums; font-weight: 500; }
+.ev-tally { display: flex; flex-direction: column; gap: .5rem; min-width: 11rem; }
+.ev-tally .stat .v small { font-size: .9rem; color: var(--muted); }
+.ev-roles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+.ev-role h3 { margin: 0; }
+.ev-role.is-short { border-color: color-mix(in srgb, var(--ember) 55%, var(--rule)); }
+.ev-need { font-family: var(--font-display); font-size: 1.1rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ev-need.short { color: var(--ember); }
+.ev-need.met { color: var(--tide); }
+.ev-benched { opacity: .6; }
+.ev-checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); gap: .5rem 1rem; }
+.ev-rate { display: grid; grid-template-columns: 3rem minmax(4rem, 1fr) auto; gap: .5rem; align-items: center; }
+.pill.st-going { color: var(--tide); border-color: color-mix(in srgb, var(--tide) 50%, transparent); }
+.pill.st-maybe { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 50%, transparent); }
+.pill.st-late { color: var(--ember); border-color: color-mix(in srgb, var(--ember) 50%, transparent); }
+.pill.st-cant { color: var(--blood); border-color: color-mix(in srgb, var(--blood) 50%, transparent); }
+@media (max-width: 640px) {
+  .ev-row { flex-wrap: wrap; }
+  .ev-side { flex-direction: row; align-items: center; width: 100%; justify-content: space-between; text-align: left; }
+}

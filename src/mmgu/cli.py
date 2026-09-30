@@ -208,7 +208,10 @@ def main(argv: list[str] | None = None) -> None:
     tk = sub.add_parser("token", help="create an API token for a member (for the MCP server or companions)")
     tk.add_argument("member_id", type=int)
     tk.add_argument("--name", default="cli")
-    sub.add_parser("mcp", help="run the MCP server over stdio (needs MMGU_API_URL and MMGU_API_TOKEN)")
+    mp = sub.add_parser("mcp", help="run the MCP server for Claude (needs MMGU_API_URL and MMGU_API_TOKEN)")
+    mp.add_argument("--http", action="store_true", help="serve streamable HTTP instead of stdio")
+    mp.add_argument("--host", default="127.0.0.1")
+    mp.add_argument("--port", type=int, default=8765)
     sub.add_parser("seed-demo", help="fill an empty hall with clearly-marked example data")
     args = p.parse_args(argv)
 
@@ -228,9 +231,9 @@ def main(argv: list[str] | None = None) -> None:
         _boot()
         print(asyncio.run(_create_token(args.member_id, args.name)))
     elif args.cmd == "mcp":
-        from mmgu.addons.mcp_server.server import run_stdio
+        from mmgu.addons.mcp_server.server import main as mcp_main
 
-        run_stdio()
+        mcp_main((["--http"] if args.http else []) + ["--host", args.host, "--port", str(args.port)])
     elif args.cmd == "seed-demo":
         _boot()
         from mmgu.demo import seed

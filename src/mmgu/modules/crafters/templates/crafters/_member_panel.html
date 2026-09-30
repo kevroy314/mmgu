@@ -1,0 +1,12 @@
+<section class="card">
+  <div class="row-between"><h3>{{ icon("anvil", 18) }} Tradeskills</h3>{% if can_edit %}<a class="btn small" href="/crafters/mine{{ '?member_id=' ~ member.id if member.id != viewer.id }}">Edit</a>{% endif %}</div>
+  {% set any = rows | selectattr(1) | list %}
+  {% if any %}
+  {% for ch, skills in any %}
+  <p class="small"><strong>{{ ch.name }}</strong></p>
+  <div class="list">{% for s in skills %}<div class="line"><div class="main"><div class="small">{{ s.skill }}{% if s.specialty %} <span class="tiny muted">· {{ s.specialty }}</span>{% endif %}</div><div class="meter"><span style="width:{{ [100, (100 * s.level / skill_max) | round | int] | min }}%"></span></div></div><span class="num">{{ s.level }}</span></div>{% endfor %}</div>
+  {% endfor %}
+  {% else %}
+  <p class="small muted">No tradeskills recorded.{% if can_edit %} <a href="/crafters/mine{{ '?member_id=' ~ member.id if member.id != viewer.id }}">Add them</a> so the guild knows who to ask.{% endif %}</p>
+  {% endif %}
+</section>

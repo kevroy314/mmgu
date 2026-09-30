@@ -1,0 +1,28 @@
+{# expects s: TimerState #}
+{% from "watch/_macros.html" import dur, pill, big %}
+<article class="card watch-card watch-card-{{ s.status }}" id="timer-{{ s.timer.id }}">
+  <div class="row-between watch-head">
+    <div class="main"><h3><a href="/watch/timers/{{ s.timer.id }}">{{ s.timer.creature }}</a></h3>
+      <div class="tiny muted">{% if s.timer.zone %}{{ s.timer.zone }} · {% endif %}every {{ dur(s.timer.respawn_minutes) }}{% if s.timer.variance_minutes %} ± {{ dur(s.timer.variance_minutes) }}{% endif %}</div></div>
+    {{ pill(s) }}
+  </div>
+  {{ big(s) }}
+  {% if s.death %}
+  <p class="tiny muted watch-meta">
+    {% if s.status in ("waiting", "open") %}{% if s.window_start != s.window_end %}Window {{ s.window_start | dt }} – {{ s.window_end | dt }}{% else %}Spawns {{ s.window_start | dt }}{% endif %}<br>{% endif %}
+    Died {{ s.death.died_at | reltime }}{% if s.reporter %} · {{ s.reporter.display_name }}{% endif %}{% if s.death.source != "manual" %} · via {{ s.death.source }}{% endif %}
+  </p>
+  {% elif s.status == "unknown" %}<p class="tiny muted watch-meta">Report a kill to start the timer.</p>{% endif %}
+  <div class="btn-row watch-actions">
+    {% if viewer.can("watch.report") %}
+    <form method="post" action="/watch/timers/{{ s.timer.id }}/tod" hx-confirm="{{ s.timer.creature }} died just now?"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="when" value="now">
+      <button class="btn primary small">{{ icon("skull", 15) }} ToD now</button></form>
+    <form class="watch-ago" method="post" action="/watch/timers/{{ s.timer.id }}/tod"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="when" value="ago">
+      <input name="minutes_ago" type="number" inputmode="numeric" min="0" max="10080" placeholder="min" aria-label="Minutes ago" required>
+      <button class="btn small">ago</button></form>
+    {% endif %}
+    <form method="post" action="/watch/timers/{{ s.timer.id }}/watch"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn small {{ 'ghost' if not s.watching }}" title="{{ 'Stop getting alerts' if s.watching else 'Get a notice (and Discord DM) when the window opens' }}">{{ icon("check" if s.watching else "bell", 15) }} {{ "Watching" if s.watching else "Watch" }}</button></form>
+    {% if s.watchers %}<span class="tiny muted">{{ plural(s.watchers, "watcher") }}</span>{% endif %}
+  </div>
+</article>

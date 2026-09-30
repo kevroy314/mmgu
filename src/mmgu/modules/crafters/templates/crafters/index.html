@@ -1,0 +1,36 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}The Crafters' Hall{% endblock %}
+{% block content %}
+{% call ui.page_head("Tradeskills", "The Crafters' Hall", "Who in the guild has which tradeskill, how high, and what they specialise in.") %}
+  {% if viewer.can("crafters.edit") %}<a class="btn primary" href="/crafters/mine">{{ icon("edit", 16) }} Update my skills</a>{% endif %}
+{% endcall %}
+{% include "crafters/_tabs.html" %}
+{% include "crafters/_whocan_box.html" %}
+<div class="statbar">
+  <div class="stat"><span class="v">{{ crafter_count }}</span><span class="k">characters with skills</span></div>
+  <div class="stat"><span class="v">{{ recipe_count }}</span><span class="k">recipes</span></div>
+</div>
+{% if not crafter_count %}
+{{ ui.empty("anvil", "No tradeskills recorded yet", "Once members add their skill levels, each tradeskill lists who has it here, highest first.", "/crafters/mine" if viewer.can("crafters.edit") else None, "Add your skills") }}
+{% endif %}
+{% for cat, skills in groups %}
+{% set filled = skills | selectattr(1) | list %}
+{% set bare = skills | rejectattr(1) | map(attribute=0) | list %}
+<section class="section" id="cat-{{ slug(cat) }}">
+  <div class="section-head"><h2>{{ cat | capitalize }}</h2><span class="muted small">{{ filled | length }} of {{ skills | length }} skills covered</span></div>
+  {% if filled %}
+  <div class="grid">
+    {% for skill, crafters in filled %}
+    <article class="card" id="skill-{{ slug(skill) }}">
+      <div class="row-between"><h3>{{ skill }}</h3><a class="small" href="/crafters/recipes?skill={{ skill | urlencode }}">Recipes</a></div>
+      <div class="list">{% for c in crafters[:8] %}{% include "crafters/_crafter_line.html" %}{% endfor %}</div>
+      {% if crafters | length > 8 %}<a class="small" href="/crafters/whocan?q={{ skill | urlencode }}">All {{ crafters | length }} with {{ skill }}</a>{% endif %}
+    </article>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if bare %}<p class="small muted">Nobody has recorded: {{ bare | join(", ") }}.</p>{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

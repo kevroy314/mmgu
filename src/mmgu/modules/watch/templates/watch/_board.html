@@ -1,0 +1,8 @@
+<div id="watch-board" class="watch-board" hx-get="/watch" hx-trigger="every 30s" hx-select="#watch-board" hx-target="this" hx-swap="outerHTML" hx-push-url="false">
+{% if states %}
+  {% for s in states %}{% include "watch/_timer_card.html" %}{% endfor %}
+{% else %}
+  {% import "core/_macros.html" as ui %}
+  {{ ui.empty("hourglass", "No creatures tracked yet", "Tracked named creatures show here with a live countdown to their next spawn window." ~ (" Add the first one with the form on this page." if viewer.can("watch.manage") else " An officer or raid leader can add them.")) }}
+{% endif %}
+</div>

@@ -1,0 +1,68 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% from "events/_bits.html" import day_badge, badge_script %}
+{% block title %}The War Table{% endblock %}
+{% block content %}
+{% call ui.page_head("The War Table · Events & loot", "Events", "Raids, group nights and crafting parties. Sign up with the character you're bringing.") %}
+  {% if viewer.can("loot.view") %}<a class="btn" href="/loot">{{ icon("coin", 16) }} Loot history</a>{% endif %}
+  <a class="btn" href="/events/attendance">{{ icon("check", 16) }} Attendance</a>
+  {% if viewer.can("events.manage") %}<a class="btn primary" href="/events/new">{{ icon("plus", 16) }} Schedule event</a>{% endif %}
+{% endcall %}
+
+<div class="row-between">
+  <nav class="tabs" aria-label="Which events">
+    <a href="/events{{ '?kind=' ~ kind if kind }}" class="{{ 'on' if show == 'upcoming' }}">Upcoming</a>
+    <a href="/events?show=past{{ '&kind=' ~ kind if kind }}" class="{{ 'on' if show == 'past' }}">Past</a>
+  </nav>
+  <div class="chips">
+    <a class="chip {{ 'on' if not kind }}" href="/events{{ '?show=past' if show == 'past' }}">All</a>
+    {% for k in kinds %}<a class="chip {{ 'on' if kind == k }}" href="/events?kind={{ k }}{{ '&show=past' if show == 'past' }}">{{ k }}</a>{% endfor %}
+  </div>
+</div>
+
+{% if events %}
+<div class="stack">
+{% for e in events %}
+  {% set c = counts[e.id] %}{% set s = mine.get(e.id) %}{% set lead = leaders.get(e.leader_id) %}
+  <article class="card ev-row ev-{{ e.status }}">
+    {{ day_badge(e.starts_at) }}
+    <div class="main stack-sm">
+      <div class="row"><h3><a href="/events/{{ e.id }}">{{ e.title }}</a></h3>
+        <span class="pill {{ {'Raid': 'blood', 'Group': 'tide', 'Crafting': 'ember', 'Social': 'arcane'}.get(e.kind, '') }}">{{ e.kind }}</span>
+        {% if e.status == "active" %}<span class="pill solid">Happening now</span>{% elif e.status == "cancelled" %}<span class="pill blood">Cancelled</span>{% endif %}</div>
+      <p class="meta"><span>{{ icon("clock", 14) }} {{ e.starts_at | dt }}</span>
+        {% if show == "upcoming" and e.status == "scheduled" %}<span>starts in {{ e.starts_at | countdown }}</span>{% endif %}
+        {% if e.zone %}<span>{{ icon("map", 14) }} {{ e.zone }}</span>{% endif %}
+        {% if lead %}<span>{{ icon("flag", 14) }} {{ lead.display_name }}</span>{% endif %}
+        {% if e.min_level or e.max_level %}<span>Levels {{ e.min_level or 1 }}–{{ e.max_level or game.level_cap }}</span>{% endif %}</p>
+    </div>
+    <div class="ev-side">
+      <span class="ev-count"><b>{{ (c.get("going", 0) + c.get("late", 0)) }}</b>{% if e.capacity %}/{{ e.capacity }}{% endif %} going{% if c.get("maybe") %} · {{ c.maybe }} maybe{% endif %}</span>
+      {% if s %}<span class="pill st-{{ s.status }}">You: {{ labels[s.status] }}</span>
+      {% elif show == "upcoming" and e.status in ("scheduled", "active") and viewer.can("events.signup") %}
+      <form method="post" action="/events/{{ e.id }}/signup"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="going"><input type="hidden" name="next" value="/events">
+        <button class="btn small primary">{{ icon("check", 14) }} I'm going</button></form>
+      {% endif %}
+    </div>
+  </article>
+{% endfor %}
+</div>
+{% elif show == "past" %}
+{{ ui.empty("swords", "No past events yet", "Finished and cancelled events land here, with their attendance and loot.") }}
+{% else %}
+{{ ui.empty("swords", "Nothing on the schedule", "When an officer or raid leader schedules a raid or group night, it shows up here for everyone to sign up." if not viewer.can("events.manage") else "Schedule the first raid or group night and the guild can start signing up.", "/events/new" if viewer.can("events.manage") else None, "Schedule event") }}
+{% endif %}
+
+{% if feed_url %}
+<section class="card" id="calendar">
+  <div class="row-between"><h3>{{ icon("clock", 18) }} Add events to your calendar</h3></div>
+  <p class="small muted">Subscribe to this link in Google Calendar (Other calendars → From URL), Apple Calendar (File → New Calendar Subscription) or Outlook. It shows every guild event, with your sign-up in the title. Calendars refresh it every few hours.</p>
+  <div class="row"><input type="text" readonly value="{{ feed_url }}" aria-label="Your calendar feed link" style="flex:1;min-width:14rem" onfocus="this.select()">
+    <button class="btn small" type="button" data-copy="{{ feed_url }}">Copy link</button></div>
+  <form method="post" action="/events/calendar/regenerate" class="row" hx-confirm="Make a new link? Calendars using the old one stop updating."><input type="hidden" name="csrf" value="{{ csrf }}">
+    <span class="tiny muted">The link is private to you. Shared it by mistake?</span>
+    <button class="btn small ghost">Make a new link</button></form>
+</section>
+{% endif %}
+{{ badge_script() }}
+{% endblock %}

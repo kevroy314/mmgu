@@ -1,0 +1,7 @@
+<link rel="stylesheet" href="/static/m/crafters/crafters.css?v=1">
+<nav class="tabs" aria-label="Crafters' Hall sections">
+  <a href="/crafters" class="{{ 'on' if tab == 'directory' }}">Directory</a>
+  <a href="/crafters/whocan" class="{{ 'on' if tab == 'whocan' }}">Who can make…?</a>
+  <a href="/crafters/recipes" class="{{ 'on' if tab == 'recipes' }}">Recipes</a>
+  {% if viewer.can("crafters.edit") %}<a href="/crafters/mine" class="{{ 'on' if tab == 'mine' }}">My skills</a>{% endif %}
+</nav>

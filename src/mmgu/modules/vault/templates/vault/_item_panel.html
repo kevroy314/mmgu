@@ -1,0 +1,12 @@
+<section class="section" id="vault">
+  <div class="section-head"><h2>{{ icon("chest", 20) }} In the Vault</h2><span class="muted small">{{ total }} in the guild bank</span></div>
+  {% if rows %}
+  <div class="row">
+    {% for h, c in rows %}<a class="chip" href="/vault/mules/{{ c.id }}">{{ c.name }} <strong class="num">{{ h.qty }}</strong></a>{% endfor %}
+    {% if viewer.can("vault.request") %}<a class="btn small primary" href="/vault/requests/new?item_id={{ item.id }}">Request it</a>{% endif %}
+  </div>
+  {% else %}
+  <div class="row"><p class="small muted">The guild bank doesn't hold any.</p>
+    {% if viewer.can("vault.request") %}<a class="btn small ghost" href="/vault/requests/new?item_id={{ item.id }}">Ask for one anyway</a>{% endif %}</div>
+  {% endif %}
+</section>

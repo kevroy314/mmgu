@@ -1,0 +1,43 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}{{ "My tradeskills" if member.id == viewer.id else member.display_name ~ "'s tradeskills" }}{% endblock %}
+{% block content %}
+{{ ui.page_head("The Crafters' Hall", "My tradeskills" if member.id == viewer.id else member.display_name ~ "'s tradeskills", "Type a new level over the old one and press Save. Clear a line (or tick Remove) to drop a skill.") }}
+{% include "crafters/_tabs.html" %}
+{% if not rows %}
+{{ ui.empty("banner", "Add a character first", "Tradeskills belong to characters. Add your main on the Muster Roll, then come back to record their skills.", "/roster/members/" ~ member.id, "Add a character") }}
+{% else %}
+<form class="stack" method="post" action="/crafters/mine">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <input type="hidden" name="member_id" value="{{ member.id }}">
+  {% for ch, skills in rows %}
+  <section class="card craft-grid">
+    <div class="row-between"><h3>{{ ch.name }}</h3><span class="small muted">{{ ch.level or "?" }} {{ ch.class_name or "" }}{% if ch.is_main %} · main{% endif %}</span></div>
+    <div class="table-wrap"><table class="t">
+      <thead><tr><th>Skill</th><th class="n">Level <span class="tiny">(0–{{ skill_max }})</span></th><th>Specialty / notes</th><th><span class="sr-only">Remove</span></th></tr></thead>
+      <tbody>
+      {% for s in skills %}
+        <tr>
+          <td><label for="lvl-{{ s.id }}">{{ s.skill }}</label></td>
+          <td class="n"><input id="lvl-{{ s.id }}" name="lvl-{{ s.id }}" type="number" inputmode="numeric" min="0" max="{{ skill_max }}" value="{{ s.level }}" class="craft-num"></td>
+          <td><input name="spec-{{ s.id }}" type="text" maxlength="300" value="{{ s.specialty or '' }}" placeholder="e.g. can make Bronze weapons" aria-label="{{ s.skill }} specialty"></td>
+          <td><label class="check tiny"><input type="checkbox" name="del-{{ s.id }}" value="1"> Remove</label></td>
+        </tr>
+      {% endfor %}
+        <tr class="craft-add">
+          <td><select name="new-skill-{{ ch.id }}" aria-label="Add a skill for {{ ch.name }}"><option value="">+ Add a skill…</option>
+            {% set have = skills | map(attribute="skill") | list %}
+            {% for cat, names in categories.items() %}<optgroup label="{{ cat | capitalize }}">{% for n in names if n not in have %}<option>{{ n }}</option>{% endfor %}</optgroup>{% endfor %}
+          </select></td>
+          <td class="n"><input name="new-lvl-{{ ch.id }}" type="number" inputmode="numeric" min="0" max="{{ skill_max }}" placeholder="Level" class="craft-num" aria-label="Level"></td>
+          <td><input name="new-spec-{{ ch.id }}" type="text" maxlength="300" placeholder="Specialty (optional)" aria-label="Specialty"></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table></div>
+  </section>
+  {% endfor %}
+  <div class="form-foot"><button class="btn primary">{{ icon("check", 16) }} Save all</button><span class="small muted">From Discord: <code>/crafter set</code></span></div>
+</form>
+{% endif %}
+{% endblock %}

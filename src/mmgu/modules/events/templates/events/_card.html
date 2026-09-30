@@ -1,0 +1,13 @@
+{% from "events/_bits.html" import kind_pill %}
+<section class="card">
+  <div class="row-between"><h3>{{ icon("swords", 18) }} Coming up</h3><a class="small" href="/events">All events</a></div>
+  {% if events %}
+  <div class="list">{% for e in events %}{% set c = counts[e.id] %}{% set s = mine.get(e.id) %}
+    <div class="line"><div class="main"><a href="/events/{{ e.id }}">{{ e.title }}</a>
+      <div class="tiny muted">{{ e.starts_at | dt }}{% if e.status == "active" %} · <strong>now</strong>{% endif %} · {{ c.get("going", 0) + c.get("late", 0) }} going{% if e.zone %} · {{ e.zone }}{% endif %}</div></div>
+      {% if s %}<span class="pill st-{{ s.status }}">{{ labels[s.status] }}</span>
+      {% elif viewer.can("events.signup") %}<form method="post" action="/events/{{ e.id }}/signup"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="going"><input type="hidden" name="next" value="/">
+        <button class="btn small" title="Sign up with your main character">{{ icon("check", 14) }} Going</button></form>{% endif %}
+    </div>{% endfor %}</div>
+  {% else %}<p class="small muted">Nothing scheduled.{% if viewer.can("events.manage") %} <a href="/events/new">Schedule a raid or group night</a>.{% endif %}</p>{% endif %}
+</section>

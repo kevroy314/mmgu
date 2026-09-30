@@ -1,0 +1,20 @@
+<div id="ollama-check" class="stack-sm">
+{% if error %}
+  <div class="notice blood"><strong>{{ icon("warn", 16) }} Not connected</strong><p class="small">{{ error }}</p></div>
+{% else %}
+  {% set names = models | map(attribute="name") | list %}
+  <div class="notice {{ 'tide' if ollama_model in names else 'gold' }}">
+    <strong>{{ icon("check", 16) }} Ollama answered at {{ ollama_url }}</strong>
+    {% if ollama_model in names %}
+    <p class="small">The configured model <code>{{ ollama_model }}</code> is ready.</p>
+    {% else %}
+    <p class="small">The configured model <code>{{ ollama_model }}</code> isn't downloaded. On the Ollama machine run <code>ollama pull {{ ollama_model }}</code>, or pick one of these.</p>
+    {% endif %}
+  </div>
+  {% if models %}
+  <ul class="list">{% for m in models %}<li class="line"><code>{{ m.name }}</code> <span class="muted small">{{ m.size_gb }} GB</span></li>{% endfor %}</ul>
+  {% else %}
+  <p class="small muted">Ollama has no models yet.</p>
+  {% endif %}
+{% endif %}
+</div>

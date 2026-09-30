@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Who can make{{ " " ~ q if q }}?{% endblock %}
+{% block content %}
+{{ ui.page_head("The Crafters' Hall", "Who can make " ~ q ~ "?" if q else "Who can make…?", "Search an item to see its recipes and who's skilled enough, or a tradeskill to see everyone who has it.") }}
+{% include "crafters/_tabs.html" %}
+{% include "crafters/_whocan_box.html" %}
+{% if q and q | length < 2 %}
+<p class="small muted">Type at least two letters.</p>
+{% elif q and res.empty %}
+{{ ui.empty("search", "Nobody found for “" ~ q ~ "”", "No recipe makes that and nobody lists it as a specialty. If you know the recipe, add it so the right crafters show up.", "/crafters/recipes/new?result=" ~ (q | urlencode) if viewer.can("crafters.edit") else None, "Add a recipe") }}
+{% elif q %}
+  {% if res.skill %}
+  <section class="section"><div class="section-head"><h2>Everyone with {{ res.skill }}</h2><a class="small" href="/crafters/recipes?skill={{ res.skill | urlencode }}">{{ res.skill }} recipes</a></div>
+    {% if res.skill_crafters %}<div class="card"><div class="list">{% for c in res.skill_crafters %}{% include "crafters/_crafter_line.html" %}{% endfor %}</div></div>
+    {% else %}<p class="small muted">Nobody has recorded {{ res.skill }} yet.</p>{% endif %}
+  </section>
+  {% endif %}
+  {% for r, comps, crafters in res.recipes %}
+  <section class="card">
+    <div class="row-between"><h3><a href="/crafters/recipes/{{ r.id }}">{{ r.result_name }}</a></h3><span class="pill gold">{{ r.skill }}{% if r.trivial %} {{ r.trivial }}{% endif %}</span></div>
+    {% if comps %}<p class="small muted">Needs: {% for c in comps %}{{ c.qty ~ "× " if c.qty > 1 }}{{ c.name }}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+    {% if crafters %}<div class="list">{% for c in crafters %}{% include "crafters/_crafter_line.html" %}{% endfor %}</div>
+    {% else %}<p class="small muted">Nobody has {{ r.skill }}{{ " at " ~ r.trivial ~ "+" if r.trivial }} recorded yet.</p>{% endif %}
+  </section>
+  {% endfor %}
+  {% if res.specialists %}
+  <section class="section"><div class="section-head"><h2>Specialties mentioning “{{ q }}”</h2></div>
+    <div class="card"><div class="list">{% for c in res.specialists %}<div class="line"><div class="main"><strong>{{ c.character.name }}</strong> <span class="tiny muted">{{ c.row.skill }} {{ c.row.level }}</span><div class="tiny muted">{{ c.row.specialty }}</div></div></div>{% endfor %}</div></div>
+  </section>
+  {% endif %}
+{% endif %}
+{% endblock %}

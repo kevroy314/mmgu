@@ -1,0 +1,9 @@
+# Continuous SQLite backup. Set LITESTREAM_REPLICA_URL in .env, e.g.
+#   s3://my-bucket/hallkeeper   (AWS S3, Backblaze B2, Cloudflare R2 via S3 API)
+#   gcs://my-bucket/hallkeeper  (Google Cloud Storage)
+# plus the provider's credentials (LITESTREAM_ACCESS_KEY_ID / LITESTREAM_SECRET_ACCESS_KEY for S3-compatible).
+# Restore: docker compose run --rm litestream restore -o /data/mmgu.db /data/mmgu.db
+dbs:
+  - path: /data/mmgu.db
+    replicas:
+      - url: ${LITESTREAM_REPLICA_URL}

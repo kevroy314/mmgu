@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Recipes · The Crafters' Hall{% endblock %}
+{% block content %}
+{% call ui.page_head("The Crafters' Hall", "Recipes", "What the guild knows how to make, what goes in, and the level where it stops giving skill-ups (trivial).") %}
+  {% if viewer.can("crafters.edit") %}<a class="btn primary" href="/crafters/recipes/new{{ '?skill=' ~ (skill | urlencode) if skill }}">{{ icon("plus", 16) }} Add a recipe</a>{% endif %}
+{% endcall %}
+{% include "crafters/_tabs.html" %}
+<form class="row" method="get" action="/crafters/recipes" hx-get="/crafters/recipes" hx-trigger="submit, change, input changed delay:300ms from:input[name=q]" hx-target="#recipe-list" hx-select="#recipe-list" hx-swap="outerHTML" hx-push-url="true">
+  <input name="q" type="search" value="{{ q }}" placeholder="Search by result or component" aria-label="Search recipes" style="flex:1;min-width:10rem">
+  <select name="skill" aria-label="Tradeskill"><option value="">All tradeskills</option>{% for n in skill_names %}<option {% if n == skill %}selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+  <button class="btn">Filter</button>
+</form>
+<div id="recipe-list">
+{% if recipes %}
+<div class="table-wrap"><table class="t">
+  <thead><tr><th>Makes</th><th>Skill</th><th class="n">Trivial</th><th>Components</th></tr></thead>
+  <tbody>
+  {% for r in recipes %}
+    <tr><td><a href="/crafters/recipes/{{ r.id }}">{{ r.result_name }}</a>{% if r.yield_qty > 1 %} <span class="tiny muted">×{{ r.yield_qty }}</span>{% endif %}</td>
+      <td class="small">{{ r.skill }}</td>
+      <td class="n">{{ r.trivial or "—" }}</td>
+      <td class="small muted">{% for c in comps[r.id] %}{{ c.qty ~ "× " if c.qty > 1 }}{{ c.name }}{{ ", " if not loop.last }}{% endfor %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% elif q or skill %}
+{{ ui.empty("search", "No recipes match", "Try part of the item name, or clear the tradeskill filter.") }}
+{% else %}
+{{ ui.empty("anvil", "No recipes yet", "Recipes list what goes into an item and who can make it. Add one you know.", "/crafters/recipes/new" if viewer.can("crafters.edit") else None, "Add a recipe") }}
+{% endif %}
+</div>
+{% endblock %}

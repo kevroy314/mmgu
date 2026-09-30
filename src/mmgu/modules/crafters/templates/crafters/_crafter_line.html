@@ -1,0 +1,9 @@
+{# expects c: Crafter, skill_max #}
+<div class="line craft-line">
+  <div class="main">
+    <div><strong>{{ c.character.name }}</strong>{% if c.member and c.member.display_name != c.character.name %} <span class="tiny muted">{% if viewer.can("members.view") %}<a href="/roster/members/{{ c.member.id }}">{{ c.member.display_name }}</a>{% else %}{{ c.member.display_name }}{% endif %}</span>{% endif %}</div>
+    {% if c.row.specialty %}<div class="tiny muted">{{ c.row.specialty }}</div>{% endif %}
+    <div class="meter" title="{{ c.row.level }} of {{ skill_max }}"><span style="width:{{ c.pct }}%"></span></div>
+  </div>
+  <span class="num craft-level">{{ c.row.level }}</span>
+</div>

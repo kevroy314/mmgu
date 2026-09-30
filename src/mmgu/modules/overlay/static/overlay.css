@@ -1,0 +1,16 @@
+/* The Beacon management pages (the overlay page itself is self-contained). */
+.beacon-url { display: flex; gap: .5rem; align-items: center; margin: .5rem 0; }
+.beacon-url input { flex: 1; min-width: 0; font-family: var(--font-mono); font-size: .82rem; }
+.beacon-preview { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border: 1px solid var(--rule);
+  border-radius: var(--radius); background-color: #3a3f47;
+  background-image: linear-gradient(45deg, #2d3138 25%, transparent 25%, transparent 75%, #2d3138 75%),
+                    linear-gradient(45deg, #2d3138 25%, transparent 25%, transparent 75%, #2d3138 75%);
+  background-size: 32px 32px; background-position: 0 0, 16px 16px; }
+.beacon-preview iframe { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; border: 0;
+  transform-origin: 0 0; transform: scale(.3); pointer-events: none; background: transparent; }
+.beacon-scene .row form { display: inline; }
+.beacon-feed { display: flex; gap: .7rem; align-items: flex-start; padding: .45rem .2rem; cursor: pointer; }
+.beacon-feed input { margin-top: .3rem; }
+.beacon-feed > span { display: flex; flex-direction: column; gap: .1rem; }
+.beacon-feed .hint { font-size: .82rem; color: var(--muted); }
+.beacon-item-form { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rule-soft); }

@@ -68,3 +68,47 @@ async def test_module_toggle_needs_ack(make_client):
     r = await c.post(f"/steward/modules/{m.id}", {"enable": "1", "ack": "yes"})
     assert r.status_code == 303
     assert hall.is_enabled(m.id) or m.requires
+
+
+async def test_error_page_renders_for_logged_in_browser(make_client):
+    c = await make_client()
+    r = await c.get("/archive/items/999999", headers={"Accept": "text/html"})
+    assert r.status_code == 404
+    assert "bricked up" in r.text
+
+
+async def test_bus_events_wait_for_commit(app):
+    """Handlers run after the transaction commits, so they can read what was just written."""
+    import asyncio
+
+    from sqlalchemy import select
+
+    from mmgu.core.models import Member
+    from mmgu.db import session_scope
+
+    seen: list = []
+
+    async def handler(e):
+        async with session_scope() as s:
+            seen.append((await s.execute(select(Member).where(Member.id == e.data["id"]))).scalar_one_or_none())
+
+    hall.bus.subscribe("test.deferred", handler)
+    async with session_scope() as s:
+        m = Member(display_name="Deferred")
+        s.add(m)
+        await s.flush()
+        await hall.bus.emit("test.deferred", id=m.id)
+        await asyncio.sleep(0.05)
+        assert seen == []  # not delivered before commit
+    await hall.bus.drain()
+    assert seen and seen[0] is not None
+
+    seen.clear()
+    try:
+        async with session_scope() as s:
+            await hall.bus.emit("test.deferred", id=-1)
+            raise RuntimeError("roll back")
+    except RuntimeError:
+        pass
+    await hall.bus.drain()
+    assert seen == []  # dropped on rollback

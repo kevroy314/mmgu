@@ -1,0 +1,26 @@
+/* The Notice Board: small additions on top of hall.css */
+.board-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: .8rem; }
+.board-card { background: var(--surface); border: 1px solid var(--rule); border-radius: var(--radius); padding: .8rem .95rem;
+  display: flex; flex-direction: column; gap: .45rem; min-width: 0; border-left-width: 3px; }
+.board-card.wts { border-left-color: var(--tide); }
+.board-card.wtb { border-left-color: var(--arcane); }
+.board-card.req { border-left-color: var(--ember); }
+.board-card.req.claimed { border-left-color: var(--gold); }
+.board-card.is-closed { opacity: .65; }
+.board-card .top { display: flex; justify-content: space-between; align-items: flex-start; gap: .6rem; }
+.board-card h3 { font-size: 1.05rem; overflow-wrap: anywhere; }
+.board-card h3 a { color: inherit; text-decoration: none; }
+.board-card h3 a:hover { color: var(--gold); }
+.board-card .price { font-family: var(--font-display); font-size: 1.15rem; color: var(--gold); white-space: nowrap; }
+.board-card .price.offer { color: var(--muted); font-size: .95rem; font-family: var(--font-body); }
+.board-card .meta { color: var(--muted); font-size: .85rem; display: flex; gap: .3rem .8rem; flex-wrap: wrap; }
+.board-card .body { font-size: .92rem; color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.board-card .btn-row form { display: contents; }
+.pill.wts { color: var(--tide); border-color: color-mix(in srgb, var(--tide) 50%, transparent); font-weight: 700; }
+.pill.wtb { color: var(--arcane); border-color: color-mix(in srgb, var(--arcane) 50%, transparent); font-weight: 700; }
+.board-kinds { display: flex; gap: .4rem; flex-wrap: wrap; }
+.board-kinds a { flex: 1; min-width: 9rem; text-align: center; padding: .7rem .8rem; border: 1px solid var(--rule); border-radius: var(--radius);
+  text-decoration: none; color: var(--ink-soft); background: var(--surface); display: flex; flex-direction: column; gap: .1rem; }
+.board-kinds a strong { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); }
+.board-kinds a.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.board-kinds a:hover { border-color: var(--gold-soft); }

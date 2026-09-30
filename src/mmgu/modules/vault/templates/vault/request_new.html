@@ -1,0 +1,30 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Request an item · The Vault{% endblock %}
+{% block content %}
+{{ ui.page_head("The Vault", "Request an item", "Ask the bankers for something from the guild bank. They'll approve it and hand it over in game; you'll get a notice either way.") }}
+<div class="cols">
+  <form class="card stack" method="post" action="/vault/requests">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <div class="fields-2">
+      <div class="field"><label for="rq-name">Item</label>
+        <input id="rq-name" name="name" type="text" value="{{ name }}" required list="vault-names" autocomplete="off" placeholder="Start typing an item name"></div>
+      <div class="field"><label for="rq-qty">How many</label><input id="rq-qty" name="qty" type="number" min="1" value="1" required></div>
+    </div>
+    <datalist id="vault-names">{% for n in names %}<option value="{{ n }}"></option>{% endfor %}</datalist>
+    {% if held is not none %}
+      {% if held %}<p class="small"><span class="pill tide">In stock</span> The bank holds {{ held }}.</p>
+      {% else %}<p class="small"><span class="pill ember">Not in stock</span> None is recorded on the bank mules. You can still ask; a banker may find one.</p>{% endif %}
+    {% endif %}
+    <div class="field"><label for="rq-reason">What's it for? <span class="muted">(optional)</span></label>
+      <textarea id="rq-reason" name="reason" rows="3" placeholder="e.g. Tradeskill combine, twinking my alt, raid consumable"></textarea></div>
+    <div class="form-foot"><button class="btn primary">Send request</button><a class="btn ghost" href="/vault">Cancel</a></div>
+  </form>
+  <aside class="card"><h3>How it works</h3>
+    <ol class="small muted" style="margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.3rem">
+      <li>Your request goes to the bankers' queue (and their Discord channel).</li>
+      <li>A banker approves or declines it; you get a notice.</li>
+      <li>They hand it over in game and mark it done.</li>
+    </ol></aside>
+</div>
+{% endblock %}

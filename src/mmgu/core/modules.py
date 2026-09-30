@@ -79,6 +79,7 @@ class Module:
     bot_setup: Callable[[Any], Awaitable[None] | None] | None = None
     package_dir: Path | None = None
     version: str = "0.1.0"
+    admin_url: str | None = None  # settings/setup page, linked from the Steward's Office
 
     @property
     def templates_dir(self) -> Path | None:
@@ -91,6 +92,13 @@ class Module:
         if self.package_dir and (self.package_dir / "static").is_dir():
             return self.package_dir / "static"
         return None
+
+    @property
+    def stylesheets(self) -> list[str]:
+        """URLs of the module's own CSS files; the base template loads them on every page."""
+        if not self.static_dir:
+            return []
+        return [f"/static/m/{self.id}/{p.name}" for p in sorted(self.static_dir.glob("*.css"))]
 
     @property
     def needs_acknowledgement(self) -> bool:

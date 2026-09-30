@@ -1,0 +1,35 @@
+{% import "core/_macros.html" as ui %}
+{% import "board/_ui.html" as b with context %}
+{% set here = "/board?tab=" ~ tab %}
+<div id="board-results" class="stack">
+  {% if tab in ("all", "wts", "wtb", "mine") %}
+  <section class="section">
+    {% if tab in ("all", "mine") %}<div class="section-head"><h2>{{ "Your listings" if tab == "mine" else "Buying & selling" }}</h2><span class="small muted">{{ plural(listings|length, "listing") }}</span></div>{% endif %}
+    {% if listings %}
+    <div class="board-cards">{% for li, m in listings %}{{ b.listing_card(li, m, here) }}{% endfor %}</div>
+    {% elif filtering %}
+    {{ ui.empty("search", "No listings match", "Try a shorter search or another server.") }}
+    {% elif tab == "mine" %}
+    <p class="small muted">You haven't listed anything. <a href="/board/new?kind=WTS">Sell something</a> or <a href="/board/new?kind=WTB">post a WTB</a>.</p>
+    {% elif tab == "wtb" %}
+    {{ ui.empty("search", "Nobody is buying yet", "Post what you're looking for; if a guildmate lists it for sale, you'll both be told.", "/board/new?kind=WTB" if viewer.can("board.post") else None, "Post a WTB") }}
+    {% else %}
+    {{ ui.empty("coin", "Nothing for sale yet", "Got spare drops? List them here before you try /auction. Guildmates see it on the board and in Discord.", "/board/new?kind=WTS" if viewer.can("board.post") else None, "Sell something") }}
+    {% endif %}
+  </section>
+  {% endif %}
+  {% if tab in ("all", "requests", "mine") %}
+  <section class="section">
+    {% if tab in ("all", "mine") %}<div class="section-head"><h2>{{ "Your requests & jobs" if tab == "mine" else "Requests for help" }}</h2><span class="small muted">{{ plural(reqs|length, "request") }}</span></div>{% endif %}
+    {% if reqs %}
+    <div class="board-cards">{% for r, a, h in reqs %}{{ b.request_card(r, a, h, here) }}{% endfor %}</div>
+    {% elif filtering %}
+    {{ ui.empty("search", "No requests match", "Try another category or a shorter search.") }}
+    {% elif tab == "mine" %}
+    <p class="small muted">No requests from you, and you haven't claimed any. <a href="/board?tab=requests">See who needs a hand</a>.</p>
+    {% else %}
+    {{ ui.empty("flag", "Nobody needs a hand right now", "Need a port, a combine, buffs or help getting your corpse back? Ask here and guildmates can claim it.", "/board/new?kind=request" if viewer.can("board.post") else None, "Ask for help") }}
+    {% endif %}
+  </section>
+  {% endif %}
+</div>

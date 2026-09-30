@@ -9,8 +9,6 @@ from urllib.parse import quote
 
 import yaml
 
-from mmgu.config import REPO_ROOT
-
 
 @dataclass
 class GamePack:
@@ -137,7 +135,8 @@ class GamePack:
 
 def load_game_pack(name_or_path: str, data_dir: Path) -> GamePack:
     override = data_dir / "game_pack.yaml"
-    candidates = [override, Path(name_or_path), REPO_ROOT / "game_packs" / f"{name_or_path}.yaml"]
+    bundled = Path(__file__).resolve().parents[1] / "game_packs" / f"{name_or_path}.yaml"
+    candidates = [override, Path(name_or_path), bundled]
     for path in candidates:
         if path.is_file():
             return GamePack(yaml.safe_load(path.read_text()) or {}, str(path))

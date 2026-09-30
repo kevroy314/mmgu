@@ -1,0 +1,16 @@
+{# expects t: Timer | None #}
+<form class="stack-sm" method="post" action="{{ '/watch/timers/' ~ t.id if t else '/watch/timers' }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% set sfx = t.id if t else "new" %}
+  <div class="field"><label for="tc-{{ sfx }}">Creature</label><input id="tc-{{ sfx }}" name="creature" type="text" required maxlength="120" value="{{ t.creature if t else '' }}" placeholder="e.g. Lord Grimjaw"></div>
+  <div class="field"><label for="tz-{{ sfx }}">Zone</label><input id="tz-{{ sfx }}" name="zone" type="text" list="watch-zones-{{ sfx }}" maxlength="120" value="{{ t.zone or '' if t else '' }}"></div>
+  <div class="fields">
+    <div class="field"><label for="tr-{{ sfx }}">Respawn (minutes)</label><input id="tr-{{ sfx }}" name="respawn_minutes" type="number" min="1" required value="{{ t.respawn_minutes if t else '' }}" placeholder="e.g. 480"></div>
+    <div class="field"><label for="tv-{{ sfx }}">Variance ± (minutes)</label><input id="tv-{{ sfx }}" name="variance_minutes" type="number" min="0" value="{{ t.variance_minutes if t else 0 }}"></div>
+  </div>
+  <div class="field"><label for="tn-{{ sfx }}">Notes</label><textarea id="tn-{{ sfx }}" name="notes" rows="2" placeholder="Placeholders, where it paths, what it drops…">{{ t.notes or '' if t else '' }}</textarea></div>
+  {% if t %}<label class="check small"><input type="checkbox" name="active" value="1" {% if t.active %}checked{% endif %}> Active (shown on the board)</label>
+  {% else %}<input type="hidden" name="active" value="1">{% endif %}
+  <button class="btn small primary">{{ "Save timer" if t else "Start tracking" }}</button>
+  <datalist id="watch-zones-{{ sfx }}">{% for z in game.zones %}<option>{{ z }}</option>{% endfor %}</datalist>
+</form>

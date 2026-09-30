@@ -1,0 +1,72 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% import "vault/_ui.html" as v with context %}
+{% block title %}The Vault{% endblock %}
+{% block content %}
+{% call ui.page_head("Guild bank", "The Vault", "What the guild's bank characters are holding, and a place to ask for it. There's no guild bank in game, so the guild keeps items on bank mules.") %}
+  {% if viewer.can("vault.request") %}<a class="btn primary" href="/vault/requests/new">{{ icon("plus", 16) }} Request an item</a>{% endif %}
+  <a class="btn" href="/vault/requests">{{ icon("scroll", 16) }} Requests{% if viewer.can("vault.manage") and pending %} <span class="pill ember">{{ pending }} waiting</span>{% endif %}</a>
+  <a class="btn ghost" href="/vault/history">{{ icon("clock", 16) }} History</a>
+{% endcall %}
+
+{% if viewer.can("vault.manage") and pending %}
+<div class="notice gold"><strong>{{ plural(pending, "request") }} waiting for a banker</strong>
+  <p class="small muted">Approve, decline or hand items over from the <a href="/vault/requests">request queue</a>.</p></div>
+{% endif %}
+
+{% if summaries %}
+<section class="section">
+  <div class="section-head"><h2>Bank mules</h2><span class="small muted">Pick one to see only its bags</span></div>
+  <div class="vault-mules">
+    {% for s in summaries %}
+    <a class="vault-mule {{ 'on' if mule_id == s.character.id }}" href="/vault/mules/{{ s.character.id }}">
+      <span class="nm">{{ icon("chest", 16) }} {{ s.character.name }}</span>
+      <span class="small muted">{{ plural(s.items, "item") }} · {{ plural(s.pieces, "piece") }}{% if s.character.server %} · {{ s.character.server }}{% endif %}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<div class="cols">
+  <div class="stack">
+    <form class="row" method="get" action="/vault" hx-get="/vault" hx-target="#holdings" hx-select="#holdings" hx-swap="outerHTML"
+          hx-trigger="change, input changed delay:300ms from:input[name=q]" hx-push-url="true">
+      <input type="search" name="q" value="{{ q }}" placeholder="Search the bank: bone chips, scimitar…" aria-label="Search the bank" style="flex:1;min-width:12rem">
+      <select name="mule" aria-label="Bank mule" style="width:auto"><option value="">All mules</option>{% for s in summaries %}<option value="{{ s.character.id }}" {% if mule_id == s.character.id %}selected{% endif %}>{{ s.character.name }}</option>{% endfor %}</select>
+      <select name="view" aria-label="Group by" style="width:auto"><option value="items" {% if view == 'items' %}selected{% endif %}>Group by item</option><option value="mules" {% if view == 'mules' %}selected{% endif %}>Group by mule</option></select>
+      <noscript><button class="btn">Search</button></noscript>
+    </form>
+    {% include "vault/_holdings.html" %}
+  </div>
+
+  <aside class="stack">
+    {% if viewer.can("vault.manage") and summaries %}
+    <section class="card"><h3>{{ icon("plus", 16) }} Quick deposit</h3>
+      <form class="stack-sm" method="post" action="/vault/tx">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="deposit"><input type="hidden" name="next" value="/vault">
+        <select name="character_id" aria-label="Bank mule">{% for s in summaries %}<option value="{{ s.character.id }}">{{ s.character.name }}</option>{% endfor %}</select>
+        <div class="row" style="flex-wrap:nowrap"><input name="name" type="text" placeholder="Item name" required list="item-names" aria-label="Item"
+          hx-get="/archive/suggest" hx-trigger="input changed delay:250ms" hx-target="#item-names" hx-select="#item-names" hx-swap="outerHTML" hx-push-url="false">
+          <input name="qty" type="number" min="1" value="1" style="width:5rem" aria-label="Quantity"></div>
+        <input name="note" type="text" placeholder="From whom / why (optional)" aria-label="Note">
+        <datalist id="item-names"></datalist>
+        <button class="btn small primary">Deposit</button>
+      </form>
+    </section>
+    {% endif %}
+    {% if viewer.can("vault.request") %}
+    <section class="card"><div class="row-between"><h3>{{ icon("user", 16) }} Your requests</h3><a class="small" href="/vault/requests?tab=mine">All</a></div>
+      {% if mine %}<div class="list">{% for r, m in mine %}<div class="line"><div class="main"><a href="/vault/requests/{{ r.id }}">{{ r.qty }} × {{ r.name }}</a><div class="tiny muted">{{ r.created_at | reltime }}</div></div>{{ v.status_pill(r.status) }}</div>{% endfor %}</div>
+      {% else %}<p class="small muted">Nothing open. Find what you need on the left and press <em>Request</em>.</p>{% endif %}
+    </section>
+    {% endif %}
+    <section class="card"><div class="row-between"><h3>{{ icon("clock", 16) }} Latest activity</h3><a class="small" href="/vault/history">History</a></div>
+      {% if recent %}<div class="list">{% for t, c, m in recent %}<div class="line"><div class="main">{{ v.item_name(t.name, t.item_id) }}<div class="tiny muted">{{ v.tx_kind(t) }} · {{ c.name }}{% if m %} · {{ m.display_name }}{% endif %} · {{ t.created_at | reltime }}</div></div>{{ v.delta(t) }}</div>{% endfor %}</div>
+      {% else %}<p class="small muted">No deposits or withdrawals yet.</p>{% endif %}
+    </section>
+    <section class="card"><h3>{{ icon("discord", 16) }} From Discord</h3>
+      <p class="small muted"><code>/bank search &lt;item&gt;</code> finds it on the mules. <code>/bank request &lt;item&gt;</code> asks the bankers for it.</p></section>
+  </aside>
+</div>
+{% endblock %}

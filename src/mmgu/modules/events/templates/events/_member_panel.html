@@ -1,0 +1,11 @@
+<section class="card">
+  <div class="row-between"><h3>{{ icon("swords", 18) }} Events & loot</h3>{% if viewer.can("loot.view") %}<a class="small" href="/loot?member={{ member.id }}">All loot</a>{% endif %}</div>
+  {% if rates %}
+  <div class="statbar">{% for d, v in rates.items() %}
+    <div class="stat"><span class="v">{{ ((v[0] * 100 / v[1]) | round | int) ~ "%" if v else "—" }}</span><span class="k">attendance, {{ d }} days{% if v %} ({{ v[0] }}/{{ v[1] }}){% endif %}</span></div>{% endfor %}</div>
+  {% endif %}
+  {% if loot %}
+  <div class="list">{% for a, e, m in loot %}<div class="line"><div class="main">{% if a.item_id %}<a href="/archive/items/{{ a.item_id }}">{{ a.item_name }}</a>{% else %}{{ a.item_name }}{% endif %}
+    <div class="tiny muted">{{ a.character_name }} · {{ a.method }}{% if e %} · {{ e.title }}{% endif %}</div></div><span class="tiny muted">{{ a.awarded_at | reltime }}</span></div>{% endfor %}</div>
+  {% elif viewer.can("loot.view") %}<p class="small muted">No loot received yet.</p>{% endif %}
+</section>

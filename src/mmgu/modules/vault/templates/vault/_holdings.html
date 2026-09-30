@@ -1,0 +1,38 @@
+{% import "core/_macros.html" as ui %}
+{% import "vault/_ui.html" as v with context %}
+<div id="holdings" class="section">
+  {% if not summaries %}
+    {% if viewer.can("vault.manage") %}
+    {{ ui.empty("chest", "No bank mules yet", "The Vault tracks items kept on bank characters. Add the guild's bank character on the Muster Roll and tick “Guild bank mule”; it will show up here.", "/roster/me", "Add a bank mule") }}
+    {% else %}
+    {{ ui.empty("chest", "No bank mules yet", "Once a banker marks the guild's bank characters on the Muster Roll, what they hold shows up here.") }}
+    {% endif %}
+  {% elif not rows %}
+    {% if searching %}
+    {{ ui.empty("search", "Not in the bank", "Nothing on the bank mules matches. Try part of the name, or ask on the Notice Board.") }}
+    {% else %}
+    {{ ui.empty("chest", "The bank is empty", "Record a deposit, or paste a mule's whole inventory from its page to fill the Vault in one go." if viewer.can("vault.manage") else "Nothing has been deposited yet.") }}
+    {% endif %}
+  {% elif view == "mules" %}
+    {% for s in summaries if s.character.id in by_mule %}
+    <div class="section">
+      <div class="section-head"><h3><a href="/vault/mules/{{ s.character.id }}">{{ s.character.name }}</a></h3><span class="small muted">{{ plural(by_mule[s.character.id]|length, "item") }}</span></div>
+      <div class="table-wrap"><table class="t"><thead><tr><th>Item</th><th class="n">Qty</th><th>Note</th><th></th></tr></thead><tbody>
+      {% for h in by_mule[s.character.id] %}
+      <tr><td>{{ v.item_name(h.name, h.item_id) }}</td><td class="n"><span class="vault-qty">{{ h.qty }}</span></td><td class="small muted">{{ h.slot or "" }}{% if h.slot and h.note %} · {% endif %}{{ h.note or "" }}</td>
+        <td>{% if viewer.can("vault.request") %}<a class="btn small ghost" href="/vault/requests/new?item={{ h.name | urlencode }}">Request</a>{% endif %}</td></tr>
+      {% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="section-head"><h2>{{ "Matches" if searching else "Everything in the bank" }}</h2><span class="small muted">{{ plural(totals|length, "item") }} · {{ plural(totals | sum(attribute="qty"), "piece") }}</span></div>
+    <div class="table-wrap"><table class="t"><thead><tr><th>Item</th><th class="n">Total</th><th>Held by</th><th></th></tr></thead><tbody>
+    {% for t in totals %}
+    <tr><td><strong>{{ v.item_name(t.name, t.item_id) }}</strong></td><td class="n"><span class="vault-qty">{{ t.qty }}</span></td>
+      <td><div class="vault-where">{% for c, n in t.mules %}<a class="chip" href="/vault/mules/{{ c.id }}">{{ c.name }} <strong class="num">{{ n }}</strong></a>{% endfor %}</div></td>
+      <td>{% if viewer.can("vault.request") %}<a class="btn small" href="/vault/requests/new?item={{ t.name | urlencode }}">Request</a>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+  {% endif %}
+</div>

@@ -1,0 +1,19 @@
+{# Vault-only template helpers. #}
+{% macro status_pill(status) -%}
+{% set m = {"pending": ("ember", "Waiting"), "approved": ("gold", "Approved"), "fulfilled": ("tide", "Handed over"), "denied": ("blood", "Declined"), "cancelled": ("", "Cancelled")} %}
+{% set c = m.get(status, ("", status)) %}<span class="pill {{ c[0] }}">{{ c[1] }}</span>
+{%- endmacro %}
+
+{% macro item_name(name, item_id) -%}
+{% if item_id and "archive" in enabled %}<a href="/archive/items/{{ item_id }}">{{ name }}</a>{% else %}{{ name }}{% endif %}
+{%- endmacro %}
+
+{% macro delta(t) -%}
+{% if t.kind == "deposit" %}<span class="vault-delta up">+{{ t.delta }}</span>
+{% elif t.kind == "withdraw" %}<span class="vault-delta down">{{ t.delta }}</span>
+{% else %}<span class="vault-delta {{ 'up' if t.delta > 0 else ('down' if t.delta < 0 else '') }}">= {{ t.qty_after }}</span>{% endif %}
+{%- endmacro %}
+
+{% macro tx_kind(t) -%}
+{{ {"deposit": "Deposit", "withdraw": "Withdrawal", "adjust": "Recount", "import": "Inventory update"}.get(t.kind, t.kind) }}
+{%- endmacro %}

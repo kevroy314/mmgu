@@ -20,7 +20,8 @@ os.environ.update(
         "MMGU_RUN_BOT": "false",
         "MMGU_SECRET_KEY": "test-secret",
         "MMGU_GUILD_NAME": "Test Guild",
-        "MMGU_DATABASE_URL": "",
+        "MMGU_DATABASE_URL": os.environ.get("MMGU_TEST_DATABASE_URL", ""),
+        "MMGU_BASE_URL": "http://localhost:8420",
     }
 )
 

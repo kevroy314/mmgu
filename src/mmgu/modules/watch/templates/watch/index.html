@@ -1,0 +1,74 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% from "watch/_macros.html" import dur, countdown, tz_script %}
+{% block title %}The Watch{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/m/watch/watch.css?v=1">
+{% call ui.page_head("Spawn timers", "The Watch", "When the guild's named creatures are due back. Report a kill with ToD now; the board updates itself.") %}
+  <a class="btn" href="#report">{{ icon("skull", 16) }} Report a kill</a>
+  <a class="btn" href="#camps">{{ icon("tent", 16) }} Camps</a>
+{% endcall %}
+<div class="cols watch-cols">
+  <div class="stack">
+    {% include "watch/_board.html" %}
+    {% if inactive %}
+    <details class="fold"><summary class="small">Switched-off timers ({{ inactive | length }})</summary>
+      <div class="list">{% for s in inactive %}<div class="line"><div class="main"><a href="/watch/timers/{{ s.timer.id }}">{{ s.timer.creature }}</a> <span class="tiny muted">{{ s.timer.zone or "" }}</span></div></div>{% endfor %}</div>
+    </details>
+    {% endif %}
+  </div>
+  <aside class="stack">
+    {% if viewer.can("watch.report") and states %}
+    <section class="card" id="report"><h3>{{ icon("skull", 16) }} Report a time of death</h3>
+      <form class="stack-sm" method="post" action="/watch/tod" {{ tz_script() }}>
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="tz_offset" value="">
+        <div class="field"><label for="tod-timer">Creature</label>
+          <select id="tod-timer" name="timer_id" required><option value="">Choose…</option>{% for s in states %}<option value="{{ s.timer.id }}">{{ s.timer.creature }}{% if s.timer.zone %} ({{ s.timer.zone }}){% endif %}</option>{% endfor %}</select></div>
+        <div class="fields">
+          <div class="field"><label for="tod-ago">Minutes ago</label><input id="tod-ago" name="minutes_ago" type="number" inputmode="numeric" min="0" max="10080" placeholder="blank = just now"></div>
+          <div class="field"><label for="tod-at">Or at</label><input id="tod-at" name="at" type="datetime-local"></div>
+        </div>
+        <p class="tiny muted">"Or at" uses your device's clock and time zone.</p>
+        <input name="note" type="text" maxlength="200" placeholder="Note (optional), e.g. 'killed by another guild'" aria-label="Note">
+        <button class="btn primary">Record time of death</button>
+      </form>
+    </section>
+    {% endif %}
+
+    <section class="card" id="camps"><h3>{{ icon("tent", 16) }} Camps held now</h3>
+      {% if camps %}
+      <div class="list">{% for c, m in camps %}
+        <div class="line"><div class="main"><strong>{{ c.camp }}</strong> <span class="small muted">{{ c.zone }}</span>
+          <div class="tiny muted">{{ c.character_name or (m.display_name if m else "?") }}{% if m and c.character_name and m.display_name != c.character_name %} ({{ m.display_name }}){% endif %} · since {{ c.started_at | reltime }} · clears in {{ countdown(camp_expires(c), "any moment") }}</div>
+          {% if c.note %}<div class="tiny muted">{{ c.note }}</div>{% endif %}</div>
+          {% if c.member_id == viewer.id or viewer.can("watch.manage") %}<form method="post" action="/watch/camps/{{ c.id }}/end"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small ghost">{{ "I'm done" if c.member_id == viewer.id else "End" }}</button></form>{% endif %}
+        </div>{% endfor %}</div>
+      {% else %}<p class="small muted">Nobody has checked in at a camp. Check in so others know it's taken.</p>{% endif %}
+      {% if viewer.can("watch.report") %}
+      <details class="fold" {% if not camps %}open{% endif %}><summary class="small">Check in at a camp</summary>
+        <form class="stack-sm" method="post" action="/watch/camps">
+          <input type="hidden" name="csrf" value="{{ csrf }}">
+          <input name="zone" type="text" list="watch-zones" required maxlength="120" placeholder="Zone" aria-label="Zone">
+          <input name="camp" type="text" required maxlength="120" placeholder="Camp, e.g. 'Ogre hill'" aria-label="Camp">
+          {% if my_chars %}<select name="character" aria-label="Character">{% for ch in my_chars %}<option>{{ ch.name }}</option>{% endfor %}</select>
+          {% else %}<input name="character" type="text" maxlength="64" placeholder="Character (optional)" aria-label="Character">{% endif %}
+          <button class="btn small">{{ icon("tent", 14) }} Check in</button>
+          <p class="tiny muted">Check-ins clear themselves after {{ camp_hours | round(1) | string | replace(".0", "") }} hours.</p>
+        </form>
+        <datalist id="watch-zones">{% for z in zones %}<option>{{ z }}</option>{% endfor %}</datalist>
+      </details>
+      {% endif %}
+    </section>
+
+    {% if viewer.can("watch.manage") %}
+    <section class="card"><h3>{{ icon("plus", 16) }} Track a creature</h3>
+      <details class="fold" {% if not states %}open{% endif %}><summary class="small">Add a timer</summary>
+      {% include "watch/_timer_form.html" %}
+      </details>
+    </section>
+    {% endif %}
+    <section class="card"><h3>From Discord</h3>
+      <p class="small muted"><code>/tod &lt;creature&gt;</code> reports a kill, <code>/timers</code> lists windows, <code>/watch &lt;creature&gt;</code> toggles alerts, <code>/camp start</code> and <code>/camp done</code> check in and out.</p></section>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% import "board/_ui.html" as b with context %}
+{% block title %}{{ li.kind }} {{ li.title }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="titles"><p class="eyebrow"><a href="/board?tab={{ li.kind | lower }}">The Notice Board</a> · {{ "Selling" if li.kind == "WTS" else "Buying" }}</p>
+    <h1><span class="pill {{ li.kind | lower }} {{ 'tide' if li.kind == 'WTS' else 'arcane' }}" style="vertical-align:middle">{{ li.kind }}</span> {{ b.item_link(li.title, li.item_id) }}{% if li.qty > 1 %} <span class="muted">× {{ li.qty }}</span>{% endif %}</h1>
+    <p class="lede small">Posted by {{ author.display_name if author else "?" }} {{ li.created_at | reltime }}{% if li.server %} · {{ li.server }}{% endif %}</p></div>
+  <div class="actions">
+    {% if can_edit %}
+      {% if li.status == "open" %}
+      <form method="post" action="/board/listings/{{ li.id }}/sold"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn primary">{{ icon("check", 16) }} {{ "Sold" if li.kind == "WTS" else "Got it" }}</button></form>
+      <form method="post" action="/board/listings/{{ li.id }}/renew"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn">Keep it up longer</button></form>
+      <form method="post" action="/board/listings/{{ li.id }}/close"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost">Take down</button></form>
+      {% else %}
+      <form method="post" action="/board/listings/{{ li.id }}/renew"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn primary">Post again</button></form>
+      {% endif %}
+    {% endif %}
+  </div>
+</header>
+<div class="cols">
+  <div class="stack">
+    <section class="card">
+      <div class="statbar">
+        <div class="stat"><span class="v">{{ li.price or "Offer" }}</span><span class="k">{{ "asking" if li.kind == "WTS" else "paying" }}</span></div>
+        <div class="stat"><span class="v">{{ li.qty }}</span><span class="k">quantity</span></div>
+        <div class="stat"><span class="v" style="font-size:1.1rem">{% if li.status == "open" %}{{ li.expires_at | reltime }}{% else %}{{ li.status | capitalize }}{% endif %}</span><span class="k">{{ "ends" if li.status == "open" else "status" }}</span></div>
+      </div>
+      {% if li.notes %}<p>{{ li.notes | nl2br }}</p>{% endif %}
+      {% if author and author.id != viewer.id %}<p class="small muted">Interested? Send {{ author.display_name }} a /tell in game or a message on Discord.</p>{% endif %}
+    </section>
+    <section class="section">
+      <div class="section-head"><h2>{{ "People buying this" if li.kind == "WTS" else "People selling this" }}</h2><span class="small muted">{{ plural(matches|length, "listing") }}</span></div>
+      {% if matches %}<div class="board-cards">{% for l2, m in matches %}{{ b.listing_card(l2, m, "/board/listings/" ~ li.id) }}{% endfor %}</div>
+      {% else %}<p class="small muted">No matching {{ "WTB" if li.kind == "WTS" else "WTS" }} posts yet. If one appears, {{ "the poster" if can_edit else "they" }} will be told.</p>{% endif %}
+    </section>
+    {% if same %}
+    <section class="section">
+      <div class="section-head"><h2>Also {{ "selling" if li.kind == "WTS" else "buying" }}</h2></div>
+      <div class="board-cards">{% for l2, m in same %}{{ b.listing_card(l2, m, "/board/listings/" ~ li.id) }}{% endfor %}</div>
+    </section>
+    {% endif %}
+  </div>
+  <aside class="stack">
+    {% if bank %}
+    <section class="card"><h3>{{ icon("chest", 16) }} In the guild bank</h3>
+      <div class="chips">{% for h, c in bank %}<a class="chip" href="/vault/mules/{{ c.id }}">{{ c.name }} <strong class="num">{{ h.qty }}</strong></a>{% endfor %}</div>
+      {% if li.kind == "WTB" and viewer.can("vault.request") %}<a class="btn small" href="/vault/requests/new?item={{ li.title | urlencode }}">Request from the bank</a>{% endif %}
+    </section>
+    {% endif %}
+    {% if li.item_id and "archive" in enabled %}<section class="card"><h3>{{ icon("scroll", 16) }} Item details</h3><a class="small" href="/archive/items/{{ li.item_id }}">Stats and where it drops</a></section>{% endif %}
+  </aside>
+</div>
+{% endblock %}

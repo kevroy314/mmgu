@@ -1,0 +1,40 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% from "events/_bits.html" import loot_rows, loot_form %}
+{% block title %}Loot history{% endblock %}
+{% block content %}
+{% call ui.page_head("The War Table", "Loot history", "Every item the guild has handed out, who got it and how it was decided. Open to everyone, on purpose.") %}
+  <a class="btn" href="/events">{{ icon("swords", 16) }} Events</a>
+{% endcall %}
+
+<form class="card ev-filters" method="get" action="/loot" hx-get="/loot" hx-trigger="change, keyup delay:400ms" hx-target="#loot-results" hx-select="#loot-results" hx-swap="outerHTML" hx-push-url="true">
+  <div class="fields">
+    <div class="field"><label for="f-item">Item</label><input id="f-item" name="item" type="text" value="{{ f.item }}" placeholder="Any item"></div>
+    <div class="field"><label for="f-char">Character</label><input id="f-char" name="character" type="text" value="{{ f.character }}" placeholder="Any character"></div>
+    <div class="field"><label for="f-member">Member</label><select id="f-member" name="member"><option value="">Anyone</option>{% for m in members %}<option value="{{ m.id }}" {% if f.member == m.id|string %}selected{% endif %}>{{ m.display_name }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-event">Event</label><select id="f-event" name="event"><option value="">Any event</option>{% for e in recent_events %}<option value="{{ e.id }}" {% if f.event == e.id|string %}selected{% endif %}>{{ e.title }} · {{ e.starts_at.strftime("%b %d") }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="f-since">From</label><input id="f-since" name="since" type="date" value="{{ f.since }}"></div>
+    <div class="field"><label for="f-until">To</label><input id="f-until" name="until" type="date" value="{{ f.until }}"></div>
+  </div>
+  <noscript><button class="btn small">Filter</button></noscript>
+</form>
+
+<div id="loot-results" class="stack">
+  {% if rows %}
+  <p class="small muted">{{ plural(rows | length, "award") }}{% if total_points %} · {{ '%g' % total_points }} points{% endif %}{% if f.values() | select | list %} · <a href="/loot">clear filters</a>{% endif %}</p>
+  {{ loot_rows(rows, csrf, viewer) }}
+  {% elif f.values() | select | list %}
+  {{ ui.empty("coin", "Nothing matches", "No awards match those filters. Try fewer filters.", "/loot", "Show everything") }}
+  {% else %}
+  {{ ui.empty("coin", "No loot recorded yet", "When a raid leader awards an item (here, on an event page, or with /loot award in Discord) it's listed here for everyone to see.") }}
+  {% endif %}
+</div>
+
+{% if viewer.can("loot.award") %}
+<section class="card"><h3>{{ icon("coin", 16) }} Record an award</h3>
+  {% call loot_form(csrf, methods, events=recent_events) %}
+  <datalist id="loot-chars">{% for c, m in characters %}<option value="{{ c.name }}">{{ m.display_name if m else "" }}</option>{% endfor %}</datalist>
+  {% endcall %}
+</section>
+{% endif %}
+{% endblock %}

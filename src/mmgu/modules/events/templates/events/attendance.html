@@ -1,0 +1,24 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Attendance{% endblock %}
+{% block content %}
+{% call ui.page_head("The War Table", "Attendance", "How often each member turned up. Only events where attendance was taken count, and only events since the member joined.") %}
+  <a class="btn" href="/events">{{ icon("swords", 16) }} Events</a>
+{% endcall %}
+<div class="chips">
+  <a class="chip {{ 'on' if not kind }}" href="/events/attendance">All kinds</a>
+  {% for k in kinds %}<a class="chip {{ 'on' if kind == k }}" href="/events/attendance?kind={{ k }}">{{ k }}</a>{% endfor %}
+</div>
+{% if rows %}
+<div class="table-wrap"><table class="t"><thead><tr><th>Member</th>{% for d in windows %}<th>Last {{ d }} days <span class="tiny muted">({{ plural(counted[d], "event") }})</span></th>{% endfor %}</tr></thead><tbody>
+{% for row in rows %}<tr>
+  <td><a href="/roster/members/{{ row.member.id }}">{{ row.member.display_name }}</a></td>
+  {% for d in windows %}{% set v = row.r[d] %}<td>{% if v %}{% set pct = (v[0] * 100 / v[1]) | round | int %}
+    <div class="ev-rate"><span class="num">{{ pct }}%</span><div class="meter" aria-hidden="true"><span style="width:{{ pct }}%"></span></div><span class="tiny muted">{{ v[0] }}/{{ v[1] }}</span></div>
+  {% else %}<span class="muted">—</span>{% endif %}</td>{% endfor %}
+</tr>{% endfor %}
+</tbody></table></div>
+{% else %}
+{{ ui.empty("check", "No attendance taken yet", "Once an event starts, members check in on its page, or the leader ticks names or pastes /who. The numbers add up here.") }}
+{% endif %}
+{% endblock %}

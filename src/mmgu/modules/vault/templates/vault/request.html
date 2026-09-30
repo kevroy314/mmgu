@@ -1,0 +1,58 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% import "vault/_ui.html" as v with context %}
+{% block title %}Request #{{ req.id }} · The Vault{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="titles"><p class="eyebrow"><a href="/vault/requests">Bank requests</a> · #{{ req.id }}</p>
+    <h1>{{ req.qty }} × {{ v.item_name(req.name, req.item_id) }}</h1>
+    <p class="lede small">Asked by {{ requester.display_name if requester else "?" }} {{ req.created_at | reltime }}</p></div>
+  <div class="actions">{{ v.status_pill(req.status) }}</div>
+</header>
+<div class="cols">
+  <div class="stack">
+    {% if req.reason %}<section class="card"><h3>What it's for</h3><p>{{ req.reason | nl2br }}</p></section>{% endif %}
+    {% if req.status not in ("pending", "approved") %}
+    <div class="notice {{ 'tide' if req.status == 'fulfilled' else 'blood' }}">
+      <strong>{% if req.status == "fulfilled" %}Handed over{% if source %} from {{ source.name }}{% endif %}{% elif req.status == "denied" %}Declined{% else %}Cancelled{% endif %}{% if decider %} by {{ decider.display_name }}{% endif %} {{ req.decided_at | reltime }}</strong>
+      {% if req.decision_note %}<p class="small">{{ req.decision_note }}</p>{% endif %}</div>
+    {% elif req.status == "approved" %}
+    <div class="notice gold"><strong>Approved{% if decider %} by {{ decider.display_name }}{% endif %}</strong><p class="small muted">Waiting to be handed over in game.{% if req.decision_note %} {{ req.decision_note }}{% endif %}</p></div>
+    {% endif %}
+
+    <section class="section">
+      <div class="section-head"><h2>In the Vault</h2><span class="small muted">{{ holders | sum(attribute="0.qty") if holders else 0 }} held</span></div>
+      {% if holders %}
+      <div class="list">{% for h, c in holders %}<div class="line"><div class="main"><a href="/vault/mules/{{ c.id }}">{{ c.name }}</a>{% if h.note %}<div class="tiny muted">{{ h.note }}</div>{% endif %}</div><span class="vault-qty">{{ h.qty }}</span></div>{% endfor %}</div>
+      {% else %}<p class="small muted">No bank mule holds {{ req.name }} right now.</p>{% endif %}
+    </section>
+  </div>
+  <aside class="stack">
+    {% if banker and req.status in ("pending", "approved") %}
+    <section class="card" id="handover"><h3>{{ icon("chest", 16) }} Hand it over</h3>
+      <p class="small muted">Withdraws the item from the mule you pick and closes the request.</p>
+      <form class="stack-sm" method="post" action="/vault/requests/{{ req.id }}/fulfil"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <label class="small" for="ho-mule">From</label>
+        <select id="ho-mule" name="character_id" required>
+          {% for h, c in holders %}<option value="{{ c.id }}" {% if suggested and suggested.id == c.id %}selected{% endif %}>{{ c.name }} (holds {{ h.qty }})</option>{% endfor %}
+          {% if not holders %}{% for m in mules %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}{% endif %}
+        </select>
+        <label class="small" for="ho-qty">How many</label><input id="ho-qty" name="qty" type="number" min="1" value="{{ req.qty }}">
+        <input name="note" type="text" placeholder="Note to them (optional)" aria-label="Note">
+        <button class="btn primary small" {% if not holders %}disabled title="Nothing to withdraw"{% endif %}>{{ icon("check", 14) }} Hand over</button></form>
+      {% if req.status == "pending" %}
+      <form method="post" action="/vault/requests/{{ req.id }}/approve"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="btn small">Approve for later</button></form>
+      {% endif %}
+      <form class="stack-sm" method="post" action="/vault/requests/{{ req.id }}/deny"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <input name="note" type="text" placeholder="Why not? (sent to them)" aria-label="Reason">
+        <button class="btn small danger">Decline</button></form>
+    </section>
+    {% endif %}
+    {% if req.requester_id == viewer.id and req.status in ("pending", "approved") %}
+    <section class="card"><h3>Changed your mind?</h3>
+      <form method="post" action="/vault/requests/{{ req.id }}/cancel"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small ghost">Cancel my request</button></form></section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

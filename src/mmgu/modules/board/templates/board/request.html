@@ -1,0 +1,59 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% import "board/_ui.html" as b with context %}
+{% block title %}{{ r.title }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="titles"><p class="eyebrow"><a href="/board?tab=requests">The Notice Board</a> · {{ r.category }}</p>
+    <h1>{{ r.title }}</h1>
+    <p class="lede small">Asked by {{ author.display_name if author else "?" }} {{ r.created_at | reltime }}</p></div>
+  <div class="actions">{{ b.req_pill(r.status) }}</div>
+</header>
+<div class="cols">
+  <div class="stack">
+    <section class="card">
+      {% if r.details %}<p>{{ r.details | nl2br }}</p>{% else %}<p class="muted small">No extra details.</p>{% endif %}
+      {% if r.item_name or r.tradeskill %}<p class="meta">{% if r.item_name %}<span>{{ icon("scroll", 14) }} {{ b.item_link(r.item_name, r.item_id) }}</span>{% endif %}{% if r.tradeskill %}<span>{{ icon("anvil", 14) }} {{ r.tradeskill }}</span>{% endif %}</p>{% endif %}
+    </section>
+
+    {% if helper %}
+    <div class="notice {{ 'tide' if r.status == 'done' else 'gold' }}">
+      <strong>{% if r.status == "done" %}{{ helper.display_name }} helped {{ r.done_at | reltime }}{% else %}{{ helper.display_name }} is on it (claimed {{ r.claimed_at | reltime }}){% endif %}</strong>
+      <p class="small muted">{{ helper.display_name }} has helped guildmates {{ plural(helped[0], "time") }}{% if helped[1] %} and been thanked {{ plural(helped[1], "time") }}{% endif %}.{% if r.thanked_at %} {{ author.display_name if author else "The asker" }} said thanks.{% endif %}</p>
+    </div>
+    {% elif r.status == "open" %}
+    <div class="notice"><strong>Waiting for a helper</strong><p class="small muted">Can you do it? Claim it so others know it's covered.</p></div>
+    {% endif %}
+
+    {% if viewer.can("board.post") %}
+    <div class="btn-row">
+      {% if r.status == "open" and r.author_id != viewer.id %}
+      <form method="post" action="/board/requests/{{ r.id }}/claim"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn primary">I'll help</button></form>
+      {% endif %}
+      {% if r.status in ("open", "claimed") and (r.claimed_by == viewer.id or r.author_id == viewer.id or viewer.can("board.moderate")) %}
+      <form method="post" action="/board/requests/{{ r.id }}/done"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn {{ 'primary' if r.status == 'claimed' }}">{{ icon("check", 16) }} Mark done</button></form>
+      {% endif %}
+      {% if r.status == "claimed" and (r.claimed_by == viewer.id or viewer.can("board.moderate")) %}
+      <form method="post" action="/board/requests/{{ r.id }}/unclaim"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost">I can't after all</button></form>
+      {% endif %}
+      {% if r.status == "done" and r.author_id == viewer.id and r.claimed_by and not r.thanked_at %}
+      <form method="post" action="/board/requests/{{ r.id }}/thank"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn primary">{{ icon("sparkle", 16) }} Thank {{ helper.display_name if helper else "them" }}</button></form>
+      {% endif %}
+      {% if can_edit and r.status in ("open", "claimed") %}
+      <form hx-confirm="Close this request? Nobody will be able to claim it." method="post" action="/board/requests/{{ r.id }}/close"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn ghost">Close</button></form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+  <aside class="stack">
+    {% if sellers %}
+    <section class="card"><h3>{{ icon("coin", 16) }} For sale on the board</h3>
+      <div class="list">{% for li, m in sellers %}<div class="line"><div class="main"><a href="/board/listings/{{ li.id }}">{{ m.display_name if m else "?" }}</a><div class="tiny muted">× {{ li.qty }}{% if li.server %} · {{ li.server }}{% endif %}</div></div><span class="small">{{ li.price or "offer" }}</span></div>{% endfor %}</div></section>
+    {% endif %}
+    {% if bank %}
+    <section class="card"><h3>{{ icon("chest", 16) }} In the guild bank</h3>
+      <div class="chips">{% for h, c in bank %}<a class="chip" href="/vault/mules/{{ c.id }}">{{ c.name }} <strong class="num">{{ h.qty }}</strong></a>{% endfor %}</div></section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

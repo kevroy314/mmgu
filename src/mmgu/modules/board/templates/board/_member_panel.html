@@ -1,0 +1,14 @@
+<section class="card">
+  <div class="row-between"><h3>{{ icon("pin", 18) }} On the Notice Board</h3>
+    {% if helped %}<span class="pill tide">{{ icon("sparkle", 12) }} helped {{ plural(helped, "time") }}{% if thanked %} · {{ thanked }} thanks{% endif %}</span>{% endif %}</div>
+  {% if listings or reqs %}
+  <div class="list">
+    {% for li, m in listings %}<div class="line"><span class="pill {{ li.kind | lower }} {{ 'tide' if li.kind == 'WTS' else 'arcane' }}">{{ li.kind }}</span><div class="main"><a href="/board/listings/{{ li.id }}">{{ li.title }}</a>{% if li.price %} <span class="small muted">{{ li.price }}</span>{% endif %}</div><span class="tiny muted">{{ li.created_at | reltime }}</span></div>{% endfor %}
+    {% for r, a, h in reqs %}<div class="line"><span class="pill">{{ r.category }}</span><div class="main"><a href="/board/requests/{{ r.id }}">{{ r.title }}</a></div><span class="tiny muted">{{ r.status }}</span></div>{% endfor %}
+  </div>
+  {% elif member.id == viewer.id %}
+  <p class="small muted">Nothing posted. <a href="/board/new?kind=WTS">Sell something</a> or <a href="/board?tab=requests">help a guildmate</a>.</p>
+  {% else %}
+  <p class="small muted">No open posts.</p>
+  {% endif %}
+</section>

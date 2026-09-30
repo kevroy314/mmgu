@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=1920, height=1080">
+<title>{{ scene.name }} · stream overlay</title>
+{# Self-contained on purpose: OBS loads this without logging in, so nothing here may depend on
+   files that sit behind the hall's sign-in (a trusted proxy may only expose /overlay/). #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --scale: {{ scene.scale / 100 }};
+  --win: #13120e; --win-edge: #8c7433; --win-ink: #e8e1cf; --win-name: #f0d36a; --win-inner: #5a4b24;
+  --panel: rgba(20, 18, 15, .88); --ink: #ece4d2; --muted: #b3a994; --gold: #e6c24a; --tide: #5fb3ac; --ember: #e0925a;
+  --font-display: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --font-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  --edge: 40px;
+}
+html, body { margin: 0; padding: 0; background: transparent !important; overflow: hidden; }
+body { width: 100vw; height: 100vh; font-family: var(--font-body); font-size: 22px; line-height: 1.35; color: var(--ink); }
+[hidden] { display: none !important; }
+
+/* The dock holds everything and sits where the streamer chose. Panels hug the screen edge; cards stack beyond them. */
+.dock { position: fixed; display: flex; flex-direction: column; gap: 16px; width: 560px; }
+.panels { display: flex; flex-direction: column; gap: 12px; }
+.slot { display: flex; flex-direction: column; gap: 12px; }
+.slot:empty { display: none; }
+.pos-top-left .dock     { top: var(--edge); left: var(--edge); transform: scale(var(--scale)); transform-origin: top left; }
+.pos-top-right .dock    { top: var(--edge); right: var(--edge); transform: scale(var(--scale)); transform-origin: top right; align-items: flex-end; }
+.pos-bottom-left .dock  { bottom: var(--edge); left: var(--edge); transform: scale(var(--scale)); transform-origin: bottom left; flex-direction: column-reverse; }
+.pos-bottom-right .dock { bottom: var(--edge); right: var(--edge); transform: scale(var(--scale)); transform-origin: bottom right; flex-direction: column-reverse; align-items: flex-end; }
+.pos-top .dock    { top: var(--edge); left: 50%; width: 900px; transform: translateX(-50%) scale(var(--scale)); transform-origin: top center; align-items: center; }
+.pos-bottom .dock { bottom: var(--edge); left: 50%; width: 900px; transform: translateX(-50%) scale(var(--scale)); transform-origin: bottom center; align-items: center; flex-direction: column-reverse; }
+.pos-top .panels, .pos-bottom .panels { flex-direction: row; align-items: stretch; }
+.pos-top-right .panels, .pos-bottom-right .panels, .pos-top-right .slot, .pos-bottom-right .slot { align-items: flex-end; }
+.pos-top .slot, .pos-bottom .slot { align-items: center; }
+.pos-bottom-left .slot, .pos-bottom-right .slot, .pos-bottom .slot { flex-direction: column-reverse; }
+
+/* Panels: spawn timers, next event */
+.panel { background: var(--panel); border: 1px solid rgba(140, 116, 51, .7); border-radius: 6px; padding: 12px 16px; min-width: 300px; max-width: 520px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .45); }
+.panel h2 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 500; font-size: 17px; letter-spacing: .06em; color: var(--gold); text-transform: none; }
+.panel ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.panel li { display: grid; grid-template-columns: 1fr auto; gap: 0 16px; align-items: baseline; }
+.panel .nm { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel .sub { grid-column: 1 / -1; font-size: 16px; color: var(--muted); margin-top: -2px; }
+.cd { font-family: var(--font-mono); font-size: 18px; color: var(--muted); white-space: nowrap; }
+.cd.soon { color: var(--ember); }
+.cd.open { color: var(--gold); font-weight: 500; }
+.cd.past { opacity: .6; }
+.ev-title { font-family: var(--font-display); font-size: 24px; line-height: 1.15; }
+.ev-meta { display: flex; justify-content: space-between; gap: 16px; font-size: 18px; color: var(--muted); margin-top: 4px; }
+.ev-meta b { color: var(--tide); font-weight: 500; }
+
+/* Item card: the in-game inspect window */
+.itemwin { background: var(--win); color: var(--win-ink); border: 1px solid var(--win-edge); border-radius: 3px;
+  box-shadow: inset 0 0 0 3px var(--win), inset 0 0 0 4px var(--win-inner), 0 10px 32px rgba(0, 0, 0, .55);
+  padding: 18px 22px; font-family: var(--font-mono); font-size: 17px; line-height: 1.6; display: flex; flex-direction: column; gap: 8px;
+  width: 500px; box-sizing: border-box; }
+.itemwin .eyebrow { font-family: var(--font-body); font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: #a8a08c; }
+.itemwin .nm { font-family: var(--font-display); font-size: 30px; color: var(--win-name); line-height: 1.15; }
+.itemwin .flags { color: #9fd0ff; letter-spacing: .04em; }
+.itemwin .kv { display: grid; grid-template-columns: max-content 1fr; gap: 0 16px; }
+.itemwin .kv > span:nth-child(odd) { color: #a8a08c; }
+.itemwin .statline { display: flex; flex-wrap: wrap; gap: 2px 18px; }
+.itemwin .statline b { color: #f4ecd8; font-weight: 500; }
+.itemwin .effects { color: #c9e7a8; }
+.itemwin.stale { border-style: dashed; }
+
+/* Shout-outs and alerts */
+.note { background: var(--panel); border: 1px solid rgba(140, 116, 51, .8); border-left: 5px solid var(--gold); border-radius: 6px;
+  padding: 14px 20px; max-width: 520px; box-sizing: border-box; box-shadow: 0 10px 32px rgba(0, 0, 0, .5); }
+.note .eyebrow { font-size: 14px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.note h3 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 30px; line-height: 1.15; color: var(--win-name); }
+.note p { margin: 6px 0 0; font-size: 22px; white-space: pre-line; }
+.note.alert { border-left-color: var(--tide); }
+.note .cd { display: block; margin-top: 6px; }
+
+/* Ticker line */
+.tick { background: var(--panel); border: 1px solid rgba(140, 116, 51, .6); border-radius: 999px; padding: 8px 20px; font-size: 20px;
+  max-width: 560px; box-sizing: border-box; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 6px 20px rgba(0, 0, 0, .4); }
+.tick .mark { color: var(--gold); margin-right: 8px; }
+.tick b { color: var(--win-name); font-weight: 500; }
+
+/* Transparent theme: no boxes, strong shadows so text reads over any game scene */
+.theme-clear .panel, .theme-clear .note, .theme-clear .tick { background: transparent; border-color: transparent; box-shadow: none; }
+.theme-clear .note { border-left-color: var(--gold); }
+.theme-clear .panel, .theme-clear .note, .theme-clear .tick {
+  text-shadow: 0 0 2px #000, 0 2px 4px #000, 0 0 12px rgba(0, 0, 0, .8); }
+.theme-clear .itemwin { background: rgba(19, 18, 14, .72); }
+
+/* Motion */
+.enter { opacity: 0; transform: translateY(18px) scale(.98); }
+.pos-top .enter, .pos-top-left .enter, .pos-top-right .enter { transform: translateY(-18px) scale(.98); }
+.anim { transition: opacity .45s ease, transform .45s cubic-bezier(.2, .8, .2, 1); }
+.leave { opacity: 0; transform: scale(.98); }
+.cd.open { animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .65; } }
+@media (prefers-reduced-motion: reduce) {
+  .anim { transition: opacity .2s linear; }
+  .enter, .leave, .pos-top .enter, .pos-top-left .enter, .pos-top-right .enter { transform: none; }
+  .cd.open { animation: none; }
+}
+</style>
+</head>
+<body class="pos-{{ scene.position }} theme-{{ scene.theme }}">
+<div class="dock">
+  <div class="panels">
+    <section class="panel" id="p-timers" hidden><h2>Spawn timers</h2><ol id="timers"></ol></section>
+    <section class="panel" id="p-event" hidden><h2>Next guild event</h2><div id="event"></div></section>
+  </div>
+  <div class="slot" id="ticker"></div>
+  <div class="slot" id="cards" aria-live="polite"></div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var CFG = {{ cfg | tojson }};
+  var GUILD = {{ guild | tojson }};
+  var BASE = location.pathname.replace(/\/+$/, "");
+  var MAX_QUEUE = 20;
+  var skew = 0, seen = {}, busy = {}, backoff = 1000, es = null, refreshTimer = null;
+  var queues = { cards: [], ticker: [] };
+  var slots = { cards: document.getElementById("cards"), ticker: document.getElementById("ticker") };
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function now() { return Date.now() + skew; }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function dur(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000)), d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600),
+        m = Math.floor((s % 3600) / 60), sec = s % 60;
+    if (d) return d + "d " + h + "h";
+    if (h) return h + "h " + String(m).padStart(2, "0") + "m";
+    return m + ":" + String(sec).padStart(2, "0");
+  }
+  function signed(v) { return (v > 0 ? "+" : "") + v; }
+
+  // ----- countdowns: data-start (and data-end for spawn windows) -----
+  function tickCountdowns() {
+    var t = now();
+    document.querySelectorAll(".cd[data-start]").forEach(function (c) {
+      var start = Date.parse(c.dataset.start), end = c.dataset.end ? Date.parse(c.dataset.end) : NaN, text, state = "";
+      if (isNaN(start)) { c.textContent = ""; return; }
+      if (t < start) { text = (c.dataset.window ? "opens in " : "in ") + dur(start - t); if (start - t < 15 * 60000) state = "soon"; }
+      else if (!isNaN(end) && t < end) { text = "OPEN · " + dur(end - t) + " left"; state = "open"; }
+      else if (!isNaN(end)) { text = "window passed"; state = "past"; }
+      else { text = t - start < 3 * 3600000 ? "starting now" : "started"; state = "open"; }
+      c.textContent = text;
+      c.className = "cd" + (state ? " " + state : "");
+    });
+  }
+  function countdown(start, end, isWindow) {
+    var c = el("span", "cd");
+    if (start) c.dataset.start = start;
+    if (end) c.dataset.end = end;
+    if (isWindow) c.dataset.window = "1";
+    return c;
+  }
+
+  // ----- panels -----
+  function has(feed) { return (CFG.feeds || []).indexOf(feed) !== -1; }
+  function renderTimers(list) {
+    var box = document.getElementById("p-timers"), ol = document.getElementById("timers");
+    ol.textContent = "";
+    if (!has("timers") || !list || !list.length) { box.hidden = true; return; }
+    list.forEach(function (t) {
+      var li = el("li");
+      li.appendChild(el("span", "nm", t.creature));
+      li.appendChild(countdown(t.window_start, t.window_end, true));
+      if (t.zone) li.appendChild(el("span", "sub", t.zone));
+      ol.appendChild(li);
+    });
+    box.hidden = false;
+  }
+  function renderEvent(list) {
+    var box = document.getElementById("p-event"), div = document.getElementById("event");
+    div.textContent = "";
+    var ev = list && list[0];
+    if (!has("event") || !ev) { box.hidden = true; return; }
+    div.appendChild(el("div", "ev-title", ev.title));
+    var meta = el("div", "ev-meta");
+    var left = el("span");
+    left.appendChild(countdown(ev.starts_at, null, false));
+    if (ev.zone) left.appendChild(document.createTextNode(" · " + ev.zone));
+    meta.appendChild(left);
+    var going = el("span");
+    going.appendChild(el("b", null, String(ev.going || 0)));
+    going.appendChild(document.createTextNode(" going"));
+    meta.appendChild(going);
+    div.appendChild(meta);
+    box.hidden = false;
+  }
+
+  // ----- cards -----
+  function itemCard(m) {
+    var it = m.item || {}, L = it.lines || {};
+    var a = el("article", "itemwin" + (it.stale ? " stale" : ""));
+    a.appendChild(el("div", "eyebrow", GUILD + " · Archive"));
+    a.appendChild(el("div", "nm", L.name || it.name));
+    if (L.flags) a.appendChild(el("div", "flags", L.flags));
+    function kv(pairs) {
+      var d = el("div", "kv");
+      pairs.forEach(function (p) { if (p[1]) { d.appendChild(el("span", null, p[0])); d.appendChild(el("span", null, p[1])); } });
+      if (d.children.length) a.appendChild(d);
+    }
+    kv([["Slot", L.slot]]);
+    if (L.combat) a.appendChild(el("div", null, L.combat));
+    [L.stats, L.resists].forEach(function (list) {
+      if (!list || !list.length) return;
+      var line = el("div", "statline");
+      list.forEach(function (p) {
+        var s = el("span", null, p[0] + ": ");
+        s.appendChild(el("b", null, signed(p[1])));
+        line.appendChild(s);
+      });
+      a.appendChild(line);
+    });
+    (L.effects || []).forEach(function (e) { a.appendChild(el("div", "effects", "Effect: " + e)); });
+    if (L.weight) a.appendChild(el("div", null, L.weight));
+    kv([["Class", L.classes], ["Race", L.races]]);
+    return a;
+  }
+  function noteCard(eyebrow, title, body, extra, cls) {
+    var a = el("article", "note" + (cls ? " " + cls : ""));
+    if (eyebrow) a.appendChild(el("div", "eyebrow", eyebrow));
+    if (title) a.appendChild(el("h3", null, title));
+    if (body) a.appendChild(el("p", null, body));
+    if (extra) a.appendChild(extra);
+    return a;
+  }
+  function buildCard(m) {
+    if (m.kind === "item") return itemCard(m);
+    if (m.kind === "text") return noteCard(GUILD, m.title, m.body);
+    if (m.kind === "timer")
+      return noteCard(m.title || "Spawn timer", m.creature, m.zone, countdown(m.window_start, m.window_end, true), "alert");
+    if (m.kind === "event") {
+      var body = [m.zone, m.going ? m.going + " going" : ""].filter(Boolean).join(" · ");
+      return noteCard(m.heading || "Guild event", m.title, body, m.starts_at ? countdown(m.starts_at, null, false) : null, "alert");
+    }
+    return noteCard(GUILD, m.title || "", m.body || m.text || "");
+  }
+  function buildTick(m) {
+    var d = el("div", "tick");
+    d.appendChild(el("span", "mark", "✦"));
+    if (m.kind === "discovery") {
+      d.appendChild(document.createTextNode("New discovery: "));
+      d.appendChild(el("b", null, m.item));
+      if (m.member) d.appendChild(document.createTextNode(" by " + m.member));
+    } else {
+      d.appendChild(document.createTextNode(m.text || m.title || ""));
+    }
+    return d;
+  }
+
+  function run(key) {
+    var q = queues[key];
+    if (busy[key] || !q.length) return;
+    busy[key] = true;
+    var job = q.shift();
+    var node = key === "cards" ? buildCard(job.m) : buildTick(job.m);
+    node.classList.add("anim", "enter");
+    slots[key].appendChild(node);
+    tickCountdowns();
+    void node.offsetWidth; // apply the start state before transitioning (works without animation frames)
+    node.classList.remove("enter");
+    setTimeout(function () {
+      node.classList.add("leave");
+      setTimeout(function () { node.remove(); busy[key] = false; run(key); }, reduce ? 200 : 450);
+    }, job.ms);
+  }
+  function enqueue(m, live) {
+    if (!m || m.id == null || seen[m.id]) return;
+    seen[m.id] = true;
+    var full = (CFG.card_seconds || 12) * 1000, ms = full;
+    if (!live && m.at) {
+      ms = full - (now() - Date.parse(m.at));
+      if (!(ms > 2000)) return; // already had its turn
+    }
+    var key = m.card ? "cards" : "ticker", q = queues[key];
+    q.push({ m: m, ms: ms });
+    while (q.length > MAX_QUEUE) q.shift();
+    run(key);
+  }
+
+  // ----- state and live stream -----
+  function clearAll() {
+    queues.cards.length = 0; queues.ticker.length = 0;
+    slots.cards.textContent = ""; slots.ticker.textContent = "";
+    busy = {};
+    renderTimers(null); renderEvent(null);
+  }
+  function applyScene(s) {
+    CFG = s;
+    document.body.className = "pos-" + s.position + " theme-" + s.theme;
+    document.documentElement.style.setProperty("--scale", String((s.scale || 100) / 100));
+  }
+  function loadState() {
+    return fetch(BASE + "/state", { cache: "no-store", credentials: "omit" }).then(function (r) {
+      if (r.status === 404) { clearAll(); throw new Error("gone"); }
+      if (!r.ok) throw new Error("status " + r.status);
+      return r.json();
+    }).then(function (s) {
+      var server = Date.parse(s.server_time);
+      if (!isNaN(server)) skew = server - Date.now();
+      applyScene(s.scene);
+      renderTimers(s.timers);
+      renderEvent(s.events);
+      (s.messages || []).forEach(function (m) { enqueue(m, false); });
+      tickCountdowns();
+    });
+  }
+  function refreshSoon() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(function () { loadState().catch(function () {}); }, 400);
+  }
+  function handle(m) {
+    if (m.kind === "reload") { location.reload(); return; }
+    if (m.kind === "refresh") { refreshSoon(); return; }
+    enqueue(m, true);
+  }
+  var retrying = false;
+  function retry() {
+    if (es) { es.close(); es = null; }
+    if (retrying) return;
+    retrying = true;
+    var wait = backoff;
+    backoff = Math.min(backoff * 2, 30000);
+    setTimeout(function () {
+      retrying = false;
+      loadState().then(connect, retry);
+    }, wait);
+  }
+  function connect() {
+    if (!window.EventSource) { setInterval(function () { loadState().catch(function () {}); }, 5000); return; }
+    es = new EventSource(BASE + "/stream");
+    es.addEventListener("hello", function () { backoff = 1000; });
+    es.addEventListener("msg", function (e) { try { handle(JSON.parse(e.data)); } catch (err) {} });
+    es.addEventListener("gone", retry);
+    es.onerror = retry;
+  }
+
+  setInterval(tickCountdowns, 1000);
+  setInterval(function () { loadState().catch(function () {}); }, 60000); // timers move on; keep panels fresh
+  loadState().then(connect, retry);
+})();
+</script>
+</body>
+</html>

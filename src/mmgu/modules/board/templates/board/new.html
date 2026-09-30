@@ -1,0 +1,62 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Post to the board{% endblock %}
+{% block content %}
+{{ ui.page_head("The Notice Board", "Post to the board", "Guildmates see it here and in Discord.") }}
+<nav class="board-kinds" aria-label="What are you posting?">
+  <a href="/board/new?kind=WTS{% if item %}&item={{ item | urlencode }}{% endif %}" class="{{ 'on' if kind == 'WTS' }}"><strong>Selling</strong><span class="small muted">WTS: I have it</span></a>
+  <a href="/board/new?kind=WTB{% if item %}&item={{ item | urlencode }}{% endif %}" class="{{ 'on' if kind == 'WTB' }}"><strong>Buying</strong><span class="small muted">WTB: I want it</span></a>
+  <a href="/board/new?kind=request{% if item %}&item={{ item | urlencode }}{% endif %}" class="{{ 'on' if kind == 'REQUEST' }}"><strong>Asking for help</strong><span class="small muted">Crafting, ports, buffs…</span></a>
+</nav>
+
+<div class="cols">
+{% if kind in ("WTS", "WTB") %}
+  <form class="card stack" method="post" action="/board/listings">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="{{ kind }}">
+    <div class="fields-2">
+      <div class="field"><label for="l-item">Item</label>
+        <input id="l-item" name="item" type="text" value="{{ item }}" required list="item-names" autocomplete="off" placeholder="e.g. Rusty Scimitar"
+               hx-get="/archive/suggest" hx-trigger="input changed delay:250ms" hx-target="#item-names" hx-select="#item-names" hx-swap="outerHTML" hx-push-url="false">
+        <datalist id="item-names"></datalist>
+        <p class="hint">Items in the Archive link to their stats automatically.</p></div>
+      <div class="field"><label for="l-qty">How many</label><input id="l-qty" name="qty" type="number" min="1" value="1" required></div>
+      <div class="field"><label for="l-price">{{ "Asking price" if kind == "WTS" else "Paying" }}</label>
+        <input id="l-price" name="price" type="text" maxlength="60" placeholder="e.g. 5pp, 2p 5g, or leave blank for offers"></div>
+      <div class="field"><label for="l-server">Server</label>
+        <input id="l-server" name="server" type="text" value="{{ default_server }}" list="servers" maxlength="40">
+        <datalist id="servers">{% for s in servers %}<option value="{{ s }}"></option>{% endfor %}</datalist></div>
+    </div>
+    <div class="field"><label for="l-notes">Notes <span class="muted">(optional)</span></label>
+      <textarea id="l-notes" name="notes" rows="3" placeholder="{{ 'Condition, where to meet, happy to trade for…' if kind == 'WTS' else 'Why you need it, what you could trade…' }}"></textarea></div>
+    <div class="form-foot"><button class="btn primary">Post {{ kind }}</button><span class="small muted">Stays up {{ days }} days; you can renew it.</span></div>
+  </form>
+{% else %}
+  <form class="card stack" method="post" action="/board/requests">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <fieldset><legend>What kind of help?</legend>
+      <div class="chips">{% for c in categories %}<label class="chip"><input type="radio" name="category" value="{{ c }}" required {% if c == category or (not category and loop.first) %}checked{% endif %}>{{ c }}</label>{% endfor %}</div>
+    </fieldset>
+    <div class="field"><label for="r-title">In a few words</label>
+      <input id="r-title" name="title" type="text" required maxlength="140" placeholder="e.g. Need a port to Rothold · LF someone to make a Bronze Breastplate"></div>
+    <div class="field"><label for="r-details">Details <span class="muted">(optional)</span></label>
+      <textarea id="r-details" name="details" rows="4" placeholder="Where you are, when you're on, what you'll bring or pay"></textarea></div>
+    <div class="fields-2">
+      <div class="field"><label for="r-item">Item <span class="muted">(optional)</span></label>
+        <input id="r-item" name="item" type="text" value="{{ item }}" list="item-names" autocomplete="off"
+               hx-get="/archive/suggest" hx-trigger="input changed delay:250ms" hx-target="#item-names" hx-select="#item-names" hx-swap="outerHTML" hx-push-url="false">
+        <datalist id="item-names"></datalist></div>
+      <div class="field"><label for="r-skill">Tradeskill <span class="muted">(for crafting)</span></label>
+        <input id="r-skill" name="tradeskill" type="text" list="tradeskills" maxlength="60">
+        <datalist id="tradeskills">{% for t in tradeskills %}<option value="{{ t }}"></option>{% endfor %}</datalist></div>
+    </div>
+    <div class="form-foot"><button class="btn primary">Post request</button><span class="small muted">You'll get a notice when someone claims it.</span></div>
+  </form>
+{% endif %}
+  <aside class="card"><h3>Good posts get answered</h3>
+    <ul class="small muted" style="margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.3rem">
+      <li>Use the item's exact name so buyers and sellers get matched.</li>
+      <li>Give a price, even a rough one. "Offer" works too.</li>
+      <li>Say when you're usually online.</li>
+    </ul></aside>
+</div>
+{% endblock %}

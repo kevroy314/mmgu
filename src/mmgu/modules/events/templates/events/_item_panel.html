@@ -1,0 +1,8 @@
+<section class="section" id="loot-awards">
+  <div class="section-head"><h2>Who has received this</h2><span class="muted small">{{ plural(rows | length, "award") }}</span></div>
+  <div class="list">{% for a, e, m in rows %}
+    <div class="line"><div class="main"><strong>{{ a.character_name }}</strong>{% if m %} <span class="small muted">({{ m.display_name }})</span>{% endif %}
+      <div class="tiny muted">{{ a.method }}{% if a.points is not none %} · {{ '%g' % a.points }} pts{% endif %}{% if e %} · <a href="/events/{{ e.id }}?tab=loot">{{ e.title }}</a>{% endif %}{% if a.note %} · {{ a.note }}{% endif %}</div></div>
+      <span class="tiny muted">{{ a.awarded_at | reltime }}</span></div>{% endfor %}</div>
+  <a class="small" href="/loot?item={{ item.name | urlencode }}">Full loot history</a>
+</section>

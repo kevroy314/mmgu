@@ -1,0 +1,74 @@
+{# Shared pieces for the War Table. #}
+{% macro day_badge(value) -%}
+{# A calendar-page badge. Rendered in UTC, then redrawn in the viewer's own time zone by badge_script(). #}
+<time class="ev-date" datetime="{{ value.isoformat(timespec='seconds') }}Z" data-evday aria-hidden="true">
+  <span class="wd">{{ value.strftime("%a") }}</span><span class="dy">{{ value.day }}</span><span class="mo">{{ value.strftime("%b") }}</span>
+</time>
+{%- endmacro %}
+
+{% macro badge_script() -%}
+<script>
+(function () {
+  document.querySelectorAll("time[data-evday]").forEach(function (t) {
+    var d = new Date(t.getAttribute("datetime"));
+    if (isNaN(d)) return;
+    var parts = t.querySelectorAll("span");
+    parts[0].textContent = d.toLocaleDateString(undefined, { weekday: "short" });
+    parts[1].textContent = d.getDate();
+    parts[2].textContent = d.toLocaleDateString(undefined, { month: "short" });
+  });
+})();
+</script>
+{%- endmacro %}
+
+{% macro kind_pill(kind) -%}
+<span class="pill {{ {'Raid': 'blood', 'Group': 'tide', 'Crafting': 'ember', 'Social': 'arcane'}.get(kind, '') }}">{{ kind }}</span>
+{%- endmacro %}
+
+{% macro loot_rows(rows, csrf, viewer, show_event=True, from_event=False) -%}
+<div class="table-wrap"><table class="t"><thead><tr>
+  <th>When</th><th>Item</th><th>Character</th><th>How</th><th class="n">Points</th>{% if show_event %}<th>Event</th>{% endif %}<th>Note</th>{% if viewer.can("loot.award") %}<th></th>{% endif %}
+</tr></thead><tbody>
+{% for a, e, m in rows %}
+<tr>
+  <td class="small">{{ a.awarded_at | reltime }}</td>
+  <td>{% if a.item_id %}<a href="/archive/items/{{ a.item_id }}">{{ a.item_name }}</a>{% else %}{{ a.item_name }}{% endif %}</td>
+  <td>{{ a.character_name }}{% if m %} <span class="tiny muted">· {% if m.id %}<a href="/roster/members/{{ m.id }}">{{ m.display_name }}</a>{% endif %}</span>{% endif %}</td>
+  <td><span class="pill">{{ a.method }}</span></td>
+  <td class="n">{{ ('%g' % a.points) if a.points is not none else "" }}</td>
+  {% if show_event %}<td class="small">{% if e %}<a href="/events/{{ e.id }}?tab=loot">{{ e.title }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>{% endif %}
+  <td class="small muted">{{ a.note or "" }}</td>
+  {% if viewer.can("loot.award") %}<td><form method="post" action="/loot/{{ a.id }}/delete" hx-confirm="Remove the record of {{ a.item_name }} going to {{ a.character_name }}?"><input type="hidden" name="csrf" value="{{ csrf }}">{% if from_event %}<input type="hidden" name="from_event" value="1">{% endif %}
+    <button class="btn small ghost" title="Remove this record" aria-label="Remove {{ a.item_name }} record">{{ icon("x", 14) }}</button></form></td>{% endif %}
+</tr>
+{% endfor %}
+</tbody></table></div>
+{%- endmacro %}
+
+{% macro loot_form(csrf, methods, event=None, events=None) -%}
+<form class="stack" method="post" action="/loot">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  {% if event %}<input type="hidden" name="event_id" value="{{ event.id }}"><input type="hidden" name="from_event" value="1">{% endif %}
+  <div class="fields-2">
+    <div class="field"><label for="l-item">Item</label>
+      <input id="l-item" name="item" type="text" required maxlength="120" list="loot-items" autocomplete="off" placeholder="Start typing; Archive items are suggested"
+             hx-get="/loot/suggest" hx-trigger="input changed delay:250ms" hx-target="#loot-items" hx-select="#loot-items" hx-swap="outerHTML" hx-push-url="false">
+      <datalist id="loot-items"></datalist></div>
+    <div class="field"><label for="l-char">Character</label>
+      <input id="l-char" name="character" type="text" required maxlength="64" list="loot-chars" autocomplete="off" placeholder="Who got it">
+      {{ caller() if caller else "" }}</div>
+  </div>
+  <div class="fields">
+    <div class="field"><label for="l-method">How it was decided</label>
+      <select id="l-method" name="method">{% for m in methods %}<option>{{ m }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="l-points">Points spent (optional)</label><input id="l-points" name="points" type="number" step="any" min="0"></div>
+    {% if events is not none and not event %}
+    <div class="field"><label for="l-event">At event (optional)</label>
+      <select id="l-event" name="event_id"><option value="">—</option>{% for e in events %}<option value="{{ e.id }}">{{ e.title }} · {{ e.starts_at.strftime("%b %d") }}</option>{% endfor %}</select></div>
+    {% endif %}
+  </div>
+  <div class="field"><label for="l-note">Note (optional)</label><input id="l-note" name="note" type="text" maxlength="300" placeholder="e.g. won the roll 94 over 88"></div>
+  <div class="form-foot"><button class="btn primary">{{ icon("coin", 16) }} Record award</button>
+    <span class="tiny muted">Everyone who can see loot history sees this.</span></div>
+</form>
+{%- endmacro %}

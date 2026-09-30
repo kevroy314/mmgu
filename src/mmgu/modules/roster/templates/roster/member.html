@@ -27,7 +27,7 @@
           {% if can_edit %}
           <details class="fold"><summary class="small">Edit</summary>
             {{ charform(game, csrf, "/roster/characters/" ~ c.id, c, can_mule=viewer.can("vault.manage") or viewer.can("characters.edit_any")) }}
-            <form method="post" action="/roster/characters/{{ c.id }}/retire" style="margin-top:.5rem"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small danger" hx-confirm="Retire {{ c.name }} from the roll?">Retire character</button></form>
+            <form method="post" action="/roster/characters/{{ c.id }}/retire" style="margin-top:.5rem" hx-confirm="Retire {{ c.name }} from the roll?"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small danger">Retire character</button></form>
           </details>
           {% endif %}
         </article>

@@ -1,0 +1,114 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}The Beacon{% endblock %}
+{% block content %}
+{% call ui.page_head("Stream overlay", "The Beacon", "Show item cards, new discoveries, spawn timers and events on your stream, live.") %}
+  {% if manage %}<a class="btn primary" href="/beacon/new">{{ icon("plus", 16) }} New overlay</a>{% endif %}
+{% endcall %}
+
+<div class="cols">
+  <div class="stack">
+    {% if manage %}
+      {% if scenes %}
+      <div class="notice gold">
+        <strong>Add an overlay URL in OBS → Sources → Browser, 1920×1080, and tick “Shutdown source when not visible” off.</strong>
+        <p class="small">The URL is the only key: anyone who has it can watch that overlay, and nobody can change anything with it. If it leaks, press “New URL”.</p>
+      </div>
+      {% endif %}
+      {% for s in scenes %}
+      <section class="card beacon-scene" id="scene-{{ s.id }}">
+        <div class="row-between">
+          <h3>{{ s.name }}</h3>
+          <div class="chips">
+            {% if s.active %}<span class="pill tide">On air</span>{% else %}<span class="pill ember">Paused</span>{% endif %}
+            {% if live[s.id] %}<span class="pill" title="Copies of this overlay open right now: OBS, browser tabs and previews">Open in {{ plural(live[s.id], "place") }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="beacon-url">
+          <input type="text" readonly value="{{ url(s) }}" aria-label="Overlay URL for {{ s.name }}" onclick="this.select()">
+          <button class="btn" type="button" data-copy="{{ url(s) }}">{{ icon("link", 16) }} Copy URL</button>
+        </div>
+        <div class="beacon-preview" data-beacon-preview>
+          <iframe src="/overlay/{{ s.token }}" title="Live preview of {{ s.name }}" loading="lazy" tabindex="-1"></iframe>
+        </div>
+        <p class="tiny muted">Live preview. The chequered background stands in for your game; it isn't part of the overlay.
+          Shows: {% for f in s.feeds %}{{ feed_labels.get(f, f) }}{{ ", " if not loop.last }}{% endfor %} · {{ s.position | replace("-", " ") }} · {{ s.card_seconds }}s per card · {{ s.scale }}%</p>
+        <div class="row">
+          <form method="post" action="/beacon/scenes/{{ s.id }}/test"><input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="btn primary small">{{ icon("sparkle", 16) }} Send test card</button></form>
+          <a class="btn small" href="/beacon/scenes/{{ s.id }}">{{ icon("edit", 16) }} Edit</a>
+          <form method="post" action="/beacon/scenes/{{ s.id }}/air"><input type="hidden" name="csrf" value="{{ csrf }}">
+            <button class="btn small ghost">{{ "Pause" if s.active else "Put on air" }}</button></form>
+          <form method="post" action="/beacon/scenes/{{ s.id }}/token" hx-confirm="Make a new URL for {{ s.name }}? The old URL stops working, so you'll need to paste the new one into OBS.">
+            <input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small ghost">{{ icon("key", 16) }} New URL</button></form>
+          <form method="post" action="/beacon/scenes/{{ s.id }}/delete" hx-confirm="Delete {{ s.name }}? Its URL stops working.">
+            <input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small danger">{{ icon("trash", 16) }} Delete</button></form>
+        </div>
+      </section>
+      {% else %}
+      {{ ui.empty("beacon", "No overlays yet", "Make an overlay, paste its URL into OBS as a Browser source, and guild activity appears on your stream.", "/beacon/new", "New overlay") }}
+      {% endfor %}
+    {% else %}
+      <div class="notice">
+        <strong>You can put cards and messages on stream.</strong>
+        <p class="small">Setting up overlays is for leaders and members with the Streamer duty. Use the form here, “Show on stream” on any item in the Archive, or <code>/stream</code> in Discord.</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <aside class="stack">
+    <section class="card">
+      <h3>{{ icon("beacon", 18) }} Send to stream</h3>
+      <p class="small muted">Shows on every overlay that's on air and has Shout-outs turned on.</p>
+      <form class="stack" method="post" action="/beacon/push">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="field"><label for="p-title">Title</label>
+          <input id="p-title" name="title" type="text" maxlength="{{ text_max[0] }}" placeholder="Welcome, raiders!"></div>
+        <div class="field"><label for="p-body">Message</label>
+          <textarea id="p-body" name="body" rows="3" maxlength="{{ text_max[1] }}" placeholder="Nameless Crypt tonight at 8. Say hi in chat."></textarea>
+          <span class="hint">Up to {{ text_max[1] }} characters. Plain text.</span></div>
+        <button class="btn primary">Send message</button>
+      </form>
+      {% if archive_on %}
+      <form class="stack beacon-item-form" method="post" action="/beacon/push">
+        <input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="field"><label for="p-item">Or show an item card</label>
+          <input id="p-item" name="name" type="text" list="item-names" autocomplete="off" required placeholder="Start typing an item name"
+                 hx-get="/archive/suggest" hx-trigger="input changed delay:250ms" hx-target="#item-names" hx-select="#item-names" hx-swap="outerHTML" hx-push-url="false" hx-sync="this:replace">
+          <datalist id="item-names"></datalist></div>
+        <button class="btn">{{ icon("scroll", 16) }} Show item</button>
+      </form>
+      {% endif %}
+    </section>
+
+    <section class="card">
+      <h3>Recently on stream</h3>
+      {% if recent %}
+      <div class="list">
+        {% for m, who in recent %}
+        <div class="line"><div class="main">
+          <div>{% if m.kind == "item" %}{{ m.payload.item.name }}{% elif m.kind == "text" %}{{ m.payload.title or m.payload.body }}{% elif m.kind == "discovery" %}New discovery: {{ m.payload.item }}{% elif m.kind == "board" %}{{ m.payload.text }}{% else %}{{ m.payload.title }}{% endif %}</div>
+          <div class="tiny muted">{{ feed_labels.get(m.feed, m.feed) }}{% if who %} · {{ who.display_name }}{% endif %}{% if m.scene_id %} · test{% endif %} · {{ m.created_at | reltime }}</div>
+        </div></div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="small muted">Nothing yet. Cards you send, and new discoveries from the Archive, will be listed here.</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+
+<script>
+(function () {
+  function fit() {
+    document.querySelectorAll("[data-beacon-preview]").forEach(function (box) {
+      var f = box.querySelector("iframe");
+      if (f) f.style.transform = "scale(" + (box.clientWidth / 1920) + ")";
+    });
+  }
+  fit();
+  if (!window.__beaconFit) { window.__beaconFit = true; window.addEventListener("resize", fit); document.addEventListener("htmx:afterSettle", fit); }
+})();
+</script>
+{% endblock %}

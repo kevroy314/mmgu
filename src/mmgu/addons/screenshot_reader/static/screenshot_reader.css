@@ -1,0 +1,14 @@
+/* Screenshot Reader add-on */
+.sr-json {
+  margin: 0;
+  padding: 1rem;
+  max-height: 70vh;
+  overflow: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

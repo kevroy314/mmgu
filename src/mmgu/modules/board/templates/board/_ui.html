@@ -1,0 +1,64 @@
+{# Notice Board template helpers. Import with context. #}
+{% macro item_link(name, item_id) -%}
+{% if item_id and "archive" in enabled %}<a href="/archive/items/{{ item_id }}">{{ name }}</a>{% else %}{{ name }}{% endif %}
+{%- endmacro %}
+
+{% macro req_pill(status) -%}
+{% set m = {"open": ("ember", "Open"), "claimed": ("gold", "Claimed"), "done": ("tide", "Done"), "closed": ("", "Closed")} %}
+{% set c = m.get(status, ("", status)) %}<span class="pill {{ c[0] }}">{{ c[1] }}</span>
+{%- endmacro %}
+
+{% macro listing_card(li, m, next="/board") -%}
+<article class="board-card {{ li.kind | lower }} {{ 'is-closed' if li.status != 'open' }}">
+  <div class="top">
+    <div class="stack-sm" style="min-width:0">
+      <div class="row" style="gap:.4rem"><span class="pill {{ li.kind | lower }} {{ 'tide' if li.kind == 'WTS' else 'arcane' }}">{{ li.kind }}</span>{% if li.status != "open" %}<span class="pill">{{ li.status }}</span>{% endif %}</div>
+      <h3><a href="/board/listings/{{ li.id }}">{{ li.title }}</a>{% if li.qty > 1 %} <span class="muted small">× {{ li.qty }}</span>{% endif %}</h3>
+    </div>
+    {% if li.price %}<span class="price">{{ li.price }}</span>{% else %}<span class="price offer">offer</span>{% endif %}
+  </div>
+  {% if li.notes %}<p class="body">{{ li.notes }}</p>{% endif %}
+  <p class="meta"><span>{{ icon("user", 14) }} {{ m.display_name if m else "?" }}</span>{% if li.server %}<span>{{ li.server }}</span>{% endif %}
+    {% if li.status == "open" %}<span title="Closes by itself">ends {{ li.expires_at | reltime }}</span>{% else %}<span>posted {{ li.created_at | reltime }}</span>{% endif %}</p>
+  {% if li.author_id == viewer.id or viewer.can("board.moderate") %}
+  <div class="btn-row">
+    {% if li.status == "open" %}
+    <form method="post" action="/board/listings/{{ li.id }}/sold"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="{{ next }}"><button class="btn small">{{ icon("check", 14) }} {{ "Sold" if li.kind == "WTS" else "Got it" }}</button></form>
+    <form method="post" action="/board/listings/{{ li.id }}/close"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="{{ next }}"><button class="btn small ghost">Take down</button></form>
+    {% else %}
+    <form method="post" action="/board/listings/{{ li.id }}/renew"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="{{ next }}"><button class="btn small">Post again</button></form>
+    {% endif %}
+  </div>
+  {% endif %}
+</article>
+{%- endmacro %}
+
+{% macro request_card(r, a, h, next="/board") -%}
+<article class="board-card req {{ r.status }} {{ 'is-closed' if r.status in ('done', 'closed') }}">
+  <div class="top">
+    <div class="stack-sm" style="min-width:0">
+      <div class="row" style="gap:.4rem"><span class="pill">{{ r.category }}</span>{{ req_pill(r.status) }}</div>
+      <h3><a href="/board/requests/{{ r.id }}">{{ r.title }}</a></h3>
+    </div>
+  </div>
+  {% if r.details %}<p class="body">{{ r.details }}</p>{% endif %}
+  <p class="meta"><span>{{ icon("user", 14) }} {{ a.display_name if a else "?" }}</span>
+    {% if r.item_name %}<span>{{ icon("scroll", 14) }} {{ item_link(r.item_name, r.item_id) }}</span>{% endif %}
+    {% if r.tradeskill %}<span>{{ icon("anvil", 14) }} {{ r.tradeskill }}</span>{% endif %}
+    {% if h %}<span>helper: {{ h.display_name }}</span>{% endif %}<span>{{ r.created_at | reltime }}</span></p>
+  {% if viewer.can("board.post") %}
+  <div class="btn-row">
+    {% if r.status == "open" and r.author_id != viewer.id %}
+    <form method="post" action="/board/requests/{{ r.id }}/claim"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="{{ next }}"><button class="btn small primary">I'll help</button></form>
+    {% endif %}
+    {% if r.status == "claimed" and (r.claimed_by == viewer.id or r.author_id == viewer.id) %}
+    <form method="post" action="/board/requests/{{ r.id }}/done"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="{{ next }}"><button class="btn small primary">{{ icon("check", 14) }} Done</button></form>
+    {% endif %}
+    {% if r.status == "done" and r.author_id == viewer.id and r.claimed_by and not r.thanked_at %}
+    <form method="post" action="/board/requests/{{ r.id }}/thank"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="{{ next }}"><button class="btn small primary">{{ icon("sparkle", 14) }} Say thanks</button></form>
+    {% endif %}
+    {% if r.thanked_at %}<span class="pill tide">{{ icon("sparkle", 12) }} thanked</span>{% endif %}
+  </div>
+  {% endif %}
+</article>
+{%- endmacro %}

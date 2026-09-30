@@ -1,0 +1,25 @@
+/* The Vault: small additions on top of hall.css */
+.vault-delta { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.vault-delta.up { color: var(--tide); }
+.vault-delta.down { color: var(--ember); }
+.vault-qty { font-family: var(--font-display); font-size: 1.15rem; color: var(--gold); font-variant-numeric: tabular-nums; }
+.vault-mules { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr)); gap: .75rem; }
+.vault-mule { text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: .2rem; padding: .8rem 1rem;
+  border: 1px solid var(--rule); border-radius: var(--radius); background: var(--surface); }
+.vault-mule:hover { border-color: var(--gold-soft); }
+.vault-mule.on { border-color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold); }
+.vault-mule .nm { font-family: var(--font-display); font-size: 1.1rem; }
+.vault-where { display: flex; flex-wrap: wrap; gap: .3rem; }
+.vault-diff { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1rem; }
+.vault-diff .card h3 { display: flex; justify-content: space-between; align-items: baseline; }
+.vault-diff .added { border-top: 3px solid var(--tide); }
+.vault-diff .changed { border-top: 3px solid var(--gold); }
+.vault-diff .removed { border-top: 3px solid var(--blood); }
+.vault-diff ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .25rem; font-size: .95rem; }
+.vault-diff li { display: flex; justify-content: space-between; gap: .75rem; }
+.vault-diff li .n { font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.vault-quick { display: grid; grid-template-columns: minmax(0, 2fr) 5rem minmax(0, 1fr) auto; gap: .5rem; align-items: end; }
+@media (max-width: 640px) { .vault-quick { grid-template-columns: minmax(0, 1fr) 5rem; } .vault-quick .wide { grid-column: 1 / -1; } }
+.vault-inline { display: inline-flex; gap: .3rem; align-items: center; }
+.vault-inline input[type=number] { width: 4.5rem; padding: .25rem .4rem; }
+textarea.vault-paste { font-family: var(--font-mono); font-size: .88rem; min-height: 14rem; }

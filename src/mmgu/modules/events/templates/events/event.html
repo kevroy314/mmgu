@@ -1,0 +1,198 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% from "events/_bits.html" import day_badge, badge_script, kind_pill, loot_rows, loot_form %}
+{% block title %}{{ ev.title }}{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="titles"><p class="eyebrow"><a href="/events">The War Table</a> · {{ ev.kind }}</p><h1>{{ ev.title }}</h1>
+    <div class="chips">{{ kind_pill(ev.kind) }}
+      {% if ev.status == "active" %}<span class="pill solid">Happening now</span>
+      {% elif ev.status == "done" %}<span class="pill">Finished</span>
+      {% elif ev.status == "cancelled" %}<span class="pill blood">Cancelled</span>
+      {% else %}<span class="pill tide">Scheduled</span>{% endif %}
+      {% if ev.series_id %}<span class="pill">Weekly</span>{% endif %}</div></div>
+  <div class="actions">
+    <button class="btn ghost" type="button" data-copy="{{ hall.settings.base_url.rstrip('/') }}/events/{{ ev.id }}">{{ icon("link", 16) }} Copy link</button>
+    {% if manage %}
+      <a class="btn" href="/events/{{ ev.id }}/edit">{{ icon("edit", 16) }} Edit</a>
+      {% if ev.status == "scheduled" %}
+      <form method="post" action="/events/{{ ev.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="active">
+        <button class="btn">{{ icon("flag", 16) }} Start now</button></form>
+      <form method="post" action="/events/{{ ev.id }}/status" hx-confirm="Cancel {{ ev.title }}? Everyone signed up is told."><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="cancelled">
+        <button class="btn danger">Cancel event</button></form>
+      {% elif ev.status == "active" %}
+      <form method="post" action="/events/{{ ev.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="done">
+        <button class="btn">{{ icon("check", 16) }} Mark done</button></form>
+      {% else %}
+      <form method="post" action="/events/{{ ev.id }}/status"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="status" value="scheduled">
+        <button class="btn ghost">Put back on the schedule</button></form>
+      {% endif %}
+    {% endif %}
+  </div>
+</header>
+
+<section class="hero-card ev-hero">
+  {{ day_badge(ev.starts_at) }}
+  <div class="stack-sm grow">
+    <p class="ev-when">{{ ev.starts_at | dt }}{% if ev.ends_at %} <span class="muted">until</span> {{ ev.ends_at | dt }}{% endif %}</p>
+    {% if ev.status == "scheduled" %}<p class="ev-count-down">Starts in {{ ev.starts_at | countdown }}</p>
+    {% elif ev.status == "active" %}<p class="ev-count-down countdown-open">Started {{ ev.starts_at | reltime }}</p>{% endif %}
+    <p class="meta">
+      {% if ev.zone %}<span>{{ icon("map", 14) }} {{ ev.zone }}</span>{% endif %}
+      {% if leader %}<span>{{ icon("flag", 14) }} Led by <a href="/roster/members/{{ leader.id }}">{{ leader.display_name }}</a></span>{% endif %}
+      {% if ev.min_level or ev.max_level %}<span>Levels {{ ev.min_level or 1 }}–{{ ev.max_level or game.level_cap }}</span>{% endif %}
+    </p>
+  </div>
+  <div class="ev-tally">
+    <div class="statbar">
+      <div class="stat"><span class="v">{{ ros.going }}{% if ev.capacity %}<small>/{{ ev.capacity }}</small>{% endif %}</span><span class="k">going</span></div>
+      <div class="stat"><span class="v">{{ ros.maybe | length }}</span><span class="k">maybe</span></div>
+      {% if ros.bench %}<div class="stat"><span class="v">{{ ros.bench | length }}</span><span class="k">bench</span></div>{% endif %}
+    </div>
+    {% if ev.capacity %}<div class="meter" role="img" aria-label="{{ ros.going }} of {{ ev.capacity }} spots filled"><span style="width:{{ [100, (ros.going * 100 / ev.capacity) | round | int] | min }}%"></span></div>{% endif %}
+  </div>
+</section>
+
+<div class="cols">
+  <div class="stack">
+    <nav class="tabs" aria-label="Event sections">
+      <a href="/events/{{ ev.id }}" class="{{ 'on' if tab == 'roster' }}">Who's going<span class="count">{{ ros.going }}</span></a>
+      <a href="/events/{{ ev.id }}?tab=attendance" class="{{ 'on' if tab == 'attendance' }}">Attendance<span class="count">{{ attendance | length }}</span></a>
+      {% if viewer.can("loot.view") %}<a href="/events/{{ ev.id }}?tab=loot" class="{{ 'on' if tab == 'loot' }}">Loot<span class="count">{{ loot | length }}</span></a>{% endif %}
+    </nav>
+
+    {% if tab == "roster" %}
+      {% if ros.short_roles and ev.status in ("scheduled", "active") %}
+      <div class="notice"><strong>{{ icon("warn", 16) }} Short on {% for g in ros.short_roles %}{{ g.label | lower }} ({{ g.short }} more){{ ", " if not loop.last }}{% endfor %}</strong>
+        <p class="small muted">Got an alt who can fill in? Switch the character on your sign-up.</p></div>
+      {% endif %}
+      {% set shown = ros.visible_groups %}
+      {% if shown %}
+      <div class="ev-roles">
+      {% for g in shown %}
+        <section class="card ev-role {{ 'is-short' if g.short }}">
+          <div class="row-between"><h3>{{ g.label }}</h3><span class="ev-need {{ 'short' if g.short else ('met' if g.want else '') }}">{{ g.have }}{% if g.want %}/{{ g.want }}{% endif %}</span></div>
+          {% if g.rows %}
+          <div class="list">{% for r in g.rows %}
+            <div class="line {{ 'ev-benched' if r.bench }}">
+              {{ ui.cls(game, r.character.class_name if r.character else None) }}
+              <div class="main"><strong>{{ r.character.name if r.character else r.member.display_name }}</strong>
+                <div class="tiny muted">{% if r.character and r.character.level %}{{ r.character.level }} · {% endif %}{{ r.member.display_name }}{% if r.signup.note %} · “{{ r.signup.note }}”{% endif %}</div></div>
+              {% if r.bench %}<span class="pill">bench</span>{% endif %}
+              {% if r.signup.status == "late" %}<span class="pill st-late">late</span>{% endif %}
+            </div>{% endfor %}</div>
+          {% else %}<p class="small muted">Nobody yet.</p>{% endif %}
+        </section>
+      {% endfor %}
+      </div>
+      {% else %}
+      {{ ui.empty("swords", "No one has signed up yet", "Be the first: pick your character and hit Going.") }}
+      {% endif %}
+      {% if ros.maybe or ros.cant %}
+      <div class="cols-even">
+        {% for title, rows in (("Maybe", ros.maybe), ("Can't make it", ros.cant)) if rows %}
+        <section class="card"><h3>{{ title }} <span class="muted small">{{ rows | length }}</span></h3>
+          <div class="chips">{% for r in rows %}<span class="chip" title="{{ r.signup.note or '' }}">{{ ui.cls(game, r.character.class_name if r.character else None) }} {{ r.character.name if r.character else r.member.display_name }}</span>{% endfor %}</div>
+        </section>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if ros.bench %}<p class="small muted">Over {{ ev.capacity }} spots: the last {{ plural(ros.bench | length, "sign-up") }} to answer sit on the bench and move up if someone drops out.</p>{% endif %}
+
+    {% elif tab == "attendance" %}
+      {% if ev.status == "active" and viewer.can("events.signup") %}
+      <div class="notice gold row-between"><div><strong>{{ "You're checked in." if checked_in else "Are you here?" }}</strong>
+        <p class="small muted">Check in so you're counted for attendance.</p></div>
+        {% if not checked_in %}<form method="post" action="/events/{{ ev.id }}/checkin"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn primary">{{ icon("check", 16) }} Check in</button></form>{% endif %}
+      </div>
+      {% endif %}
+
+      {% if who_result %}
+      <div class="notice tide"><strong>From /who: {{ who_result.marked | length }} marked, {{ who_result.already | length }} already there.</strong>
+        {% if who_result.unknown %}<p class="small">Not on the Muster Roll (add them there, then paste again): {{ who_result.unknown | join(", ") }}</p>{% endif %}</div>
+      {% endif %}
+
+      {% if manage %}
+      <section class="card"><h3>{{ icon("check", 16) }} Who was there</h3>
+        <form class="stack" method="post" action="/events/{{ ev.id }}/attendance"><input type="hidden" name="csrf" value="{{ csrf }}">
+          {% if checklist %}
+          <div class="ev-checks">{% for r in checklist %}
+            <label class="check"><input type="checkbox" name="present" value="{{ r.member.id }}" {% if r.member.id in present %}checked{% endif %}>
+              {{ ui.cls(game, r.character.class_name if r.character else None) }} {{ r.character.name if r.character else r.member.display_name }}
+              <span class="tiny muted">{{ r.member.display_name if r.character else "" }}{% if r.status %} · said {{ labels[r.status] }}{% endif %}</span></label>
+          {% endfor %}</div>
+          {% else %}<p class="small muted">Nobody signed up. Add people below or paste /who.</p>{% endif %}
+          <div class="row"><label class="small" for="add-member">Also there:</label>
+            <select id="add-member" name="add_member" style="max-width:16rem"><option value="">—</option>{% for m in all_members %}<option value="{{ m.id }}">{{ m.display_name }}</option>{% endfor %}</select></div>
+          <div class="form-foot"><button class="btn primary">Save attendance</button><span class="tiny muted">Unticked people are removed.</span></div>
+        </form>
+      </section>
+      <section class="card"><h3>{{ icon("upload", 16) }} Paste /who</h3>
+        <p class="small muted">Type <code>/who</code> in game (or <code>/who guild</code>), copy the lines from your chat log, and paste them here. Everyone whose character is on the Muster Roll is marked present.</p>
+        <form class="stack-sm" method="post" action="/events/{{ ev.id }}/who"><input type="hidden" name="csrf" value="{{ csrf }}">
+          <textarea name="text" rows="6" required placeholder="[60 Wizard] Velyra (High Elf) <Your Guild>" aria-label="/who output"></textarea>
+          <div><button class="btn">Mark from /who</button></div></form>
+      </section>
+      {% endif %}
+
+      <section class="section">
+        <div class="section-head"><h2>Present</h2><span class="muted small">{{ plural(attendance | length, "person", "people") }}</span></div>
+        {% if attendance %}
+        <div class="chips">{% for a, m, c in attendance %}
+          <span class="chip">{{ ui.cls(game, c.class_name if c else None) }} {{ c.name if c else (m.display_name if m else "?") }}{% if m and c and m.display_name != c.name %} <span class="tiny muted">{{ m.display_name }}</span>{% endif %}
+            {% if a.source == "checkin" %}<span class="tiny muted" title="Checked in">✓</span>{% elif a.source == "who" %}<span class="tiny muted" title="From /who">/who</span>{% endif %}
+            {% if manage %}<form method="post" action="/events/{{ ev.id }}/attendance/{{ a.id }}/delete" style="display:inline"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="linklike" aria-label="Remove">{{ icon("x", 12) }}</button></form>{% endif %}
+          </span>{% endfor %}</div>
+        {% else %}
+        <p class="small muted">{% if ev.status == "scheduled" %}Attendance is taken once the event starts: people check in here, or the leader ticks names or pastes /who.{% else %}No attendance recorded yet.{% endif %}</p>
+        {% endif %}
+      </section>
+
+    {% elif tab == "loot" and viewer.can("loot.view") %}
+      {% if loot %}{{ loot_rows(loot, csrf, viewer, show_event=False, from_event=True) }}
+      {% else %}<p class="small muted">No loot recorded for this event yet.{% if viewer.can("loot.award") %} Record each award below as it happens.{% endif %}</p>{% endif %}
+      {% if viewer.can("loot.award") %}
+      <section class="card"><h3>{{ icon("coin", 16) }} Award an item</h3>
+        {% call loot_form(csrf, methods, event=ev) %}
+        <datalist id="loot-chars">{% for r in checklist %}{% if r.character %}<option value="{{ r.character.name }}">{{ r.member.display_name }}</option>{% endif %}{% endfor %}</datalist>
+        {% endcall %}
+      </section>
+      {% endif %}
+    {% endif %}
+  </div>
+
+  <aside class="stack">
+    {% if viewer.can("events.signup") and ev.status in ("scheduled", "active") %}
+    <section class="card ev-signup" id="signup">
+      <h3>{{ icon("check", 16) }} {{ "Your sign-up" if mine else "Sign up" }}</h3>
+      {% if mine %}<p class="small">You're <span class="pill st-{{ mine.status }}">{{ labels[mine.status] }}</span>{% if mine.status != "cant" %} as {{ role_label(mine.role) | lower }}{% endif %}.</p>{% endif %}
+      {% if chars %}
+      <form class="stack-sm" method="post" action="/events/{{ ev.id }}/signup"><input type="hidden" name="csrf" value="{{ csrf }}">
+        <div class="chips" role="radiogroup" aria-label="Your answer">{% for key, label in statuses %}
+          <label class="chip"><input type="radio" name="status" value="{{ key }}" {% if (mine.status if mine else 'going') == key %}checked{% endif %}>{{ label }}</label>{% endfor %}</div>
+        <div class="field"><label for="s-char">Character</label>
+          <select id="s-char" name="character_id">{% for c in chars %}<option value="{{ c.id }}" {% if mine and mine.character_id == c.id %}selected{% endif %}>{{ c.name }} · {{ c.level or "?" }} {{ c.class_name or "" }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="s-role">Role</label>
+          <select id="s-role" name="role"><option value="">From class</option>{% for r in role_options %}<option value="{{ r.key }}" {% if explicit_role == r.key %}selected{% endif %}>{{ r.label }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="s-note">Note</label><input id="s-note" name="note" type="text" maxlength="200" value="{{ mine.note if mine and mine.note else '' }}" placeholder="e.g. can stay till 11"></div>
+        <button class="btn primary">{{ "Update" if mine else "Sign up" }}</button>
+      </form>
+      {% else %}
+      <p class="small muted">Add a character to the Muster Roll first, so the leader knows who you're bringing.</p>
+      <a class="btn small" href="/roster/members/{{ viewer.id }}">Add a character</a>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% if ev.description %}<section class="card"><h3>Details</h3><div class="small">{{ ev.description | nl2br }}</div></section>{% endif %}
+
+    {% if series %}
+    <section class="card"><h3>{{ icon("clock", 16) }} Other weeks</h3>
+      <div class="list">{% for s in series %}<div class="line"><div class="main"><a href="/events/{{ s.id }}">{{ s.starts_at | dt }}</a></div>{% if s.status == "cancelled" %}<span class="pill blood">cancelled</span>{% elif s.status == "done" %}<span class="pill">done</span>{% endif %}</div>{% endfor %}</div>
+    </section>
+    {% endif %}
+    <p class="tiny muted">In Discord: <code>/events</code> lists what's coming up.</p>
+  </aside>
+</div>
+{{ badge_script() }}
+{% endblock %}

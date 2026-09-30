@@ -1,0 +1,52 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}The Notice Board{% endblock %}
+{% block content %}
+{% call ui.page_head("Requests & trade", "The Notice Board", "Buy and sell with guildmates (there's no auction house), and ask for crafting, ports, buffs or a corpse recovery.") %}
+  {% if viewer.can("board.post") %}
+  <a class="btn primary" href="/board/new?kind=WTS">{{ icon("coin", 16) }} Sell something</a>
+  <a class="btn" href="/board/new?kind=WTB">{{ icon("search", 16) }} Looking to buy</a>
+  <a class="btn" href="/board/new?kind=request">{{ icon("flag", 16) }} Ask for help</a>
+  {% endif %}
+{% endcall %}
+
+<nav class="tabs" aria-label="Board sections">
+  <a href="/board" class="{{ 'on' if tab == 'all' }}">All</a>
+  <a href="/board?tab=wts" class="{{ 'on' if tab == 'wts' }}">Selling<span class="count">{{ counts.WTS }}</span></a>
+  <a href="/board?tab=wtb" class="{{ 'on' if tab == 'wtb' }}">Buying<span class="count">{{ counts.WTB }}</span></a>
+  <a href="/board?tab=requests" class="{{ 'on' if tab == 'requests' }}">Requests<span class="count">{{ counts.requests }}</span></a>
+  <a href="/board?tab=mine" class="{{ 'on' if tab == 'mine' }}">Mine</a>
+</nav>
+
+<div class="cols">
+  <div class="stack">
+    <form class="row" method="get" action="/board" hx-get="/board" hx-target="#board-results" hx-select="#board-results" hx-swap="outerHTML"
+          hx-trigger="change, input changed delay:300ms from:input[name=q]" hx-push-url="true">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <input type="search" name="q" value="{{ q }}" placeholder="Search item or title" aria-label="Search the board" style="flex:1;min-width:12rem">
+      {% if tab in ("all", "wts", "wtb") and servers|length > 1 %}
+      <select name="server" aria-label="Server" style="width:auto"><option value="">Any server</option>{% for s in servers %}<option {% if server == s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select>
+      {% endif %}
+      {% if tab in ("all", "requests") %}
+      <select name="category" aria-label="Category" style="width:auto"><option value="">Any kind of help</option>{% for c in categories %}<option {% if category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+      {% endif %}
+      <noscript><button class="btn">Filter</button></noscript>
+    </form>
+    {% include "board/_results.html" %}
+  </div>
+  <aside class="stack">
+    <section class="card"><h3>How it works</h3>
+      <ul class="small muted" style="margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.3rem">
+        <li><strong>WTS / WTB</strong> listings stay up for {{ hall.setting("board", "listing_days") or 7 }} days. Mark them sold or take them down when you're done.</li>
+        <li>When someone posts a WTB for something another member is selling, you both get a notice.</li>
+        <li><strong>Requests</strong>: press <em>I'll help</em> to claim one, then <em>Done</em>. The asker can say thanks.</li>
+      </ul></section>
+    {% if helpers %}
+    <section class="card"><h3>{{ icon("sparkle", 16) }} Most helpful</h3>
+      <div class="list">{% for name, n in helpers %}<div class="line"><div class="main">{{ name }}</div><span class="num muted">{{ n }}</span></div>{% endfor %}</div></section>
+    {% endif %}
+    <section class="card"><h3>{{ icon("discord", 16) }} From Discord</h3>
+      <p class="small muted"><code>/wts</code> and <code>/wtb</code> post a listing, <code>/request</code> asks for help, <code>/board</code> shows what's open.</p></section>
+  </aside>
+</div>
+{% endblock %}

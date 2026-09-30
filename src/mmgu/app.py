@@ -14,7 +14,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from mmgu.config import Settings
 from mmgu.core import store
-from mmgu.core.auth import LoginRequired, csrf_protect, current_viewer, require_module
+from mmgu.core.auth import LoginRequired, csrf_protect, current_viewer, require_module, resolve_viewer
 from mmgu.core.hall import hall
 from mmgu.db import init_engine, session_scope
 
@@ -56,7 +56,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         same_site="lax",
         https_only=s.base_url.startswith("https"),
     )
-    app.mount("/static", StaticFiles(directory=STATIC), name="static")
     for m in hall.modules.values():
         if m.static_dir:
             app.mount(f"/static/m/{m.id}", StaticFiles(directory=m.static_dir), name=f"static-{m.id}")
@@ -69,6 +68,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
                 log.exception("routes failed for module %s", m.id)
                 BROKEN[m.id] = repr(e)
+
+    app.mount("/static", StaticFiles(directory=STATIC), name="static")  # after /static/m/<module> mounts
 
     @app.exception_handler(LoginRequired)
     async def _login(request: Request, _exc: LoginRequired):
@@ -96,7 +97,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     "HX-Reswap": "none",
                 },
             )
-        return render(request, "core/error.html", status_code=exc.status_code, code=exc.status_code, detail=exc.detail)
+        # The request's session was rolled back, detaching the viewer; load a fresh one for the error page.
+        request.state.viewer = None
+        async with session_scope() as fresh:
+            await resolve_viewer(request, fresh)
+            return render(
+                request, "core/error.html", status_code=exc.status_code, code=exc.status_code, detail=exc.detail
+            )
 
     @app.exception_handler(RequestValidationError)
     async def _invalid(request: Request, exc: RequestValidationError):

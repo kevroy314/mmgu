@@ -1,0 +1,52 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% import "vault/_ui.html" as v with context %}
+{% block title %}Bank requests · The Vault{% endblock %}
+{% block content %}
+{% call ui.page_head("The Vault", "Bank requests", "Members ask for items; bankers approve them and hand them over from a bank mule." if banker else "Ask the bankers for something from the guild bank and follow it here.") %}
+  {% if viewer.can("vault.request") %}<a class="btn primary" href="/vault/requests/new">{{ icon("plus", 16) }} Request an item</a>{% endif %}
+  <a class="btn ghost" href="/vault">Back to the Vault</a>
+{% endcall %}
+<nav class="tabs" aria-label="Request lists">
+  <a href="/vault/requests?tab=open" class="{{ 'on' if tab == 'open' }}">Open<span class="count">{{ open_count }}</span></a>
+  <a href="/vault/requests?tab=mine" class="{{ 'on' if tab == 'mine' }}">Mine</a>
+  <a href="/vault/requests?tab=done" class="{{ 'on' if tab == 'done' }}">Closed</a>
+  <a href="/vault/requests?tab=all" class="{{ 'on' if tab == 'all' }}">All</a>
+</nav>
+{% if rows %}
+<div class="stack">
+{% for r, m in rows %}
+<article class="card">
+  <div class="row-between">
+    <div><h3><a href="/vault/requests/{{ r.id }}">{{ r.qty }} × {{ r.name }}</a></h3>
+      <p class="meta"><span>{{ m.display_name if m else "?" }}</span><span>{{ r.created_at | reltime }}</span>
+        {% if r.id in stock %}<span class="{{ '' if stock[r.id] >= r.qty else 'countdown-soon' }}">bank holds {{ stock[r.id] }}</span>{% endif %}</p></div>
+    {{ v.status_pill(r.status) }}
+  </div>
+  {% if r.reason %}<p class="small">{{ r.reason }}</p>{% endif %}
+  {% if r.decision_note %}<p class="small quote">{{ r.decision_note }}</p>{% endif %}
+  {% if r.status in ("pending", "approved") %}
+  <div class="btn-row">
+    {% if banker %}
+      {% if r.status == "pending" %}
+      <form method="post" action="/vault/requests/{{ r.id }}/approve"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="/vault/requests?tab={{ tab }}"><button class="btn small primary">{{ icon("check", 14) }} Approve</button></form>
+      {% endif %}
+      <a class="btn small" href="/vault/requests/{{ r.id }}#handover">Hand over…</a>
+      <form hx-confirm="Decline this request? They'll be told." method="post" action="/vault/requests/{{ r.id }}/deny"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="/vault/requests?tab={{ tab }}"><button class="btn small danger">Decline</button></form>
+    {% endif %}
+    {% if r.requester_id == viewer.id %}
+      <form method="post" action="/vault/requests/{{ r.id }}/cancel"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="/vault/requests?tab={{ tab }}"><button class="btn small ghost">Cancel my request</button></form>
+    {% endif %}
+  </div>
+  {% endif %}
+</article>
+{% endfor %}
+</div>
+{% elif tab == "open" %}
+{{ ui.empty("check", "No open requests", "When members ask for something from the bank, it waits here for a banker.") }}
+{% elif tab == "mine" %}
+{{ ui.empty("chest", "You haven't asked for anything", "Find an item in the Vault and press Request, or ask for something by name.", "/vault/requests/new" if viewer.can("vault.request") else None, "Request an item") }}
+{% else %}
+{{ ui.empty("scroll", "Nothing here yet", "Handed-over, declined and cancelled requests are kept here.") }}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,13 @@
+<section class="card">
+  <div class="row-between"><h3>{{ icon("pin", 18) }} The Notice Board</h3><a class="small" href="/board">Requests & trade</a></div>
+  <div class="statbar"><div class="stat"><span class="v">{{ counts.WTS }}</span><span class="k">for sale</span></div><div class="stat"><span class="v">{{ counts.WTB }}</span><span class="k">wanted</span></div><div class="stat"><span class="v">{{ counts.requests }}</span><span class="k">need a hand</span></div></div>
+  {% if reqs %}
+  <p class="tiny muted">Open requests</p>
+  <div class="list">{% for r, a, h in reqs %}<div class="line"><div class="main"><a href="/board/requests/{{ r.id }}">{{ r.title }}</a><div class="tiny muted">{{ r.category }} · {{ a.display_name if a else "?" }} · {{ r.created_at | reltime }}</div></div></div>{% endfor %}</div>
+  {% endif %}
+  {% if listings %}
+  <p class="tiny muted">Newest listings</p>
+  <div class="list">{% for li, m in listings %}<div class="line"><span class="pill {{ li.kind | lower }} {{ 'tide' if li.kind == 'WTS' else 'arcane' }}">{{ li.kind }}</span><div class="main"><a href="/board/listings/{{ li.id }}">{{ li.title }}</a><div class="tiny muted">{{ m.display_name if m else "?" }}{% if li.price %} · {{ li.price }}{% endif %}</div></div></div>{% endfor %}</div>
+  {% endif %}
+  {% if not reqs and not listings %}<p class="small muted">The board is bare. <a href="/board/new">Post the first listing or request</a>.</p>{% endif %}
+</section>

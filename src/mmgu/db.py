@@ -14,6 +14,8 @@ from sqlalchemy import JSON, DateTime, MetaData, event
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from mmgu.core.bus import begin_deferral, end_deferral
+
 NAMING = {
     "ix": "ix_%(column_0_label)s",
     "uq": "uq_%(table_name)s_%(column_0_name)s",
@@ -89,22 +91,26 @@ def sessionmaker() -> async_sessionmaker[AsyncSession]:
 
 @asynccontextmanager
 async def session_scope() -> AsyncIterator[AsyncSession]:
-    """A session that commits on success and rolls back on error. For jobs, the bot and scripts."""
-    async with sessionmaker()() as session:
-        try:
-            yield session
-            await session.commit()
-        except BaseException:
-            await session.rollback()
-            raise
+    """A session that commits on success and rolls back on error. For jobs, the bot and scripts.
+
+    Bus events emitted inside it are delivered after the commit, and dropped on rollback.
+    """
+    token = begin_deferral()
+    ok = False
+    try:
+        async with sessionmaker()() as session:
+            try:
+                yield session
+                await session.commit()
+                ok = True
+            except BaseException:
+                await session.rollback()
+                raise
+    finally:
+        end_deferral(token, dispatch=ok)
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
     """FastAPI dependency: one session per request, committed when the handler returns."""
-    async with sessionmaker()() as session:
-        try:
-            yield session
-            await session.commit()
-        except BaseException:
-            await session.rollback()
-            raise
+    async with session_scope() as session:
+        yield session

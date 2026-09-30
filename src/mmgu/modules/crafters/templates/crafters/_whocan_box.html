@@ -1,0 +1,5 @@
+<form class="row craft-search" action="/crafters/whocan" method="get" role="search">
+  <input name="q" type="search" value="{{ q or '' }}" placeholder="Who can make… an item, or a skill like Blacksmithing" aria-label="Item or tradeskill" list="craft-skills" style="flex:1;min-width:12rem">
+  <button class="btn primary">{{ icon("search", 16) }} Ask the hall</button>
+</form>
+<datalist id="craft-skills">{% for s in skill_names %}<option>{{ s }}</option>{% endfor %}</datalist>

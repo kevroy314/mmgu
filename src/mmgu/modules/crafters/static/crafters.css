@@ -1,0 +1,15 @@
+/* The Crafters' Hall */
+.craft-search { margin: .25rem 0 .5rem; }
+.craft-line .meter { margin-top: .3rem; max-width: 16rem; }
+.craft-level { font-size: 1.15rem; font-weight: 500; min-width: 2.5rem; text-align: right; font-variant-numeric: tabular-nums; }
+.craft-qty { min-width: 2.2rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.craft-grid .t td { vertical-align: middle; }
+.craft-grid .craft-num { width: 5.5rem; text-align: right; }
+.craft-grid .craft-add td { background: color-mix(in srgb, var(--surface-2) 50%, transparent); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 640px) {
+  .craft-grid .t thead { display: none; }
+  .craft-grid .t tr { display: grid; grid-template-columns: 1fr auto; gap: .35rem .6rem; padding: .5rem 0; border-bottom: 1px solid var(--rule-soft); }
+  .craft-grid .t td { border: 0; padding: 0; }
+  .craft-grid .t td:nth-child(3) { grid-column: 1 / -1; }
+}

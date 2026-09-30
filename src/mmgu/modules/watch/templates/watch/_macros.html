@@ -1,0 +1,34 @@
+{% macro dur(minutes) -%}
+{%- set h = (minutes // 60) | int %}{% set m = (minutes % 60) | int -%}
+{%- if h and m %}{{ h }}h {{ m }}m{% elif h %}{{ h }}h{% else %}{{ m }}m{% endif -%}
+{%- endmacro %}
+
+{% macro countdown(d, open_label="now", cls="") -%}
+{%- if d %}<time class="{{ cls }}" datetime="{{ d.isoformat(timespec='seconds') }}Z" data-countdown data-open-label="{{ open_label }}">{{ d.strftime("%H:%M") }} UTC</time>{% endif -%}
+{%- endmacro %}
+
+{% macro pill(s) -%}
+<span class="pill watch-pill watch-{{ s.status }}">{{ s.label }}</span>
+{%- endmacro %}
+
+{% macro tz_script() -%}
+onsubmit="var o=this.querySelector('[name=tz_offset]');if(o)o.value=new Date().getTimezoneOffset()"
+{%- endmacro %}
+
+{% macro big(s) -%}
+<div class="watch-count">
+{% if s.status == "waiting" %}
+  <span class="watch-count-k">Window opens in</span>
+  {{ countdown(s.window_start, "window open", "watch-big") }}
+{% elif s.status == "open" %}
+  <span class="watch-count-k">Window closes in</span>
+  {{ countdown(s.window_end, "window closed", "watch-big") }}
+{% elif s.status == "overdue" %}
+  <span class="watch-count-k">Window closed</span>
+  <span class="watch-big watch-dim">{{ s.window_end | reltime }}</span>
+{% else %}
+  <span class="watch-count-k">No time of death yet</span>
+  <span class="watch-big watch-dim">—</span>
+{% endif %}
+</div>
+{%- endmacro %}

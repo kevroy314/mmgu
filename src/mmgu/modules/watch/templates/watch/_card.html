@@ -1,0 +1,13 @@
+{% from "watch/_macros.html" import pill, countdown %}
+<section class="card">
+  <div class="row-between"><h3>{{ icon("hourglass", 18) }} The Watch</h3><a class="small" href="/watch">Spawn timers</a></div>
+  {% if upcoming %}
+  <div class="list">{% for s in upcoming %}
+    <div class="line"><div class="main"><a href="/watch#timer-{{ s.timer.id }}">{{ s.timer.creature }}</a>{% if s.timer.zone %} <span class="tiny muted">{{ s.timer.zone }}</span>{% endif %}
+      <div class="tiny muted">{% if s.status == "waiting" %}opens in {{ countdown(s.window_start, "now") }}{% else %}closes in {{ countdown(s.window_end, "now") }}{% endif %}</div></div>
+      {{ pill(s) }}</div>{% endfor %}</div>
+  {% else %}<p class="small muted">No spawn windows coming up. Report a kill on <a href="/watch">the Watch</a> to start a timer.</p>{% endif %}
+  {% if camps %}
+  <p class="tiny muted" style="margin-top:.6rem">Camps held: {% for c, m in camps %}<strong>{{ c.camp }}</strong> ({{ c.zone }}, {{ c.character_name or (m.display_name if m else "?") }}){{ ", " if not loop.last }}{% endfor %}</p>
+  {% endif %}
+</section>

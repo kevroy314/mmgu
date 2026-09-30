@@ -1,0 +1,71 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Ledger Sync{% endblock %}
+{% block content %}
+{% call ui.page_head("Add-on", "Ledger Sync", "Loot and kills from members' own game log files, sent by a small script they run at home.") %}
+<a class="btn ghost" href="/me#tokens">{{ icon("key", 16) }} Get an API token</a>
+{% endcall %}
+
+<div class="notice blood">
+  <strong>{{ icon("warn", 16) }} Read this before running the script</strong>
+  <p class="small">The companion script reads the game's Ledger files on your computer. The Monsters &amp; Memories user agreement forbids software that reads or mines information the game produces, so running it is likely against the current rules and could put your account at risk. It only reads those files: it never touches game memory, network traffic, or changes any game file. Whether to run it is your own decision.</p>
+</div>
+
+<div class="cols">
+  <section class="stack">
+    <h2>Recent imports</h2>
+    {% if imports %}
+    <div class="table-wrap"><table class="t">
+      <thead><tr><th>When</th><th>Member</th><th>Character</th><th class="n">New events</th><th class="n">Drops</th><th class="n">New items</th><th class="n">Timers</th></tr></thead>
+      <tbody>
+      {% for b, m in imports %}
+        <tr>
+          <td class="small">{{ b.created_at | reltime }}</td>
+          <td>{% if m %}{{ ui.member_chip(m) }}{% else %}<span class="muted">gone</span>{% endif %}</td>
+          <td>{{ b.character }}{% if b.server %} <span class="muted small">{{ b.server }}</span>{% endif %}</td>
+          <td class="n">{{ b.received - b.duplicates }}{% if b.duplicates %} <span class="muted small" title="Already imported before">+{{ b.duplicates }} repeat</span>{% endif %}</td>
+          <td class="n">{{ b.counts.get("drops_recorded", 0) }}</td>
+          <td class="n">{{ b.counts.get("items_proposed", 0) }}</td>
+          <td class="n">{{ b.counts.get("timers_updated", 0) }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}
+    {{ ui.empty("scroll", "Nothing imported yet", "When a member runs the companion script, each upload shows here with the drops and spawn times it added.") }}
+    {% endif %}
+
+    {% if totals %}
+    <h2>By member</h2>
+    <ul class="list">
+      {% for t in totals %}
+      <li class="line">{{ ui.member_chip(t.member) }} <span class="small muted">{{ plural(t.events, "event") }} in {{ plural(t.batches, "upload") }}, last {{ t.last | reltime }}</span></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+
+  <aside class="stack">
+    <div class="card stack-sm">
+      <h2>Set up the companion</h2>
+      <ol class="small stack-sm">
+        <li>Install <a href="https://www.python.org/downloads/" rel="noopener">Python 3.10 or newer</a> for Windows (tick “Add Python to PATH”).</li>
+        <li>Download <code>ledger_sync.py</code> from the <code>companion</code> folder of Hallkeeper and put it in its own folder, e.g. <code>Documents\Hallkeeper</code>.</li>
+        <li><a href="/me#tokens">Create an API token</a> on your profile page and copy it.</li>
+        <li>Open a Command Prompt in that folder and run:<br><code>python ledger_sync.py --setup</code><br>Enter the hall address <code>{{ hall_url }}</code> and your token.</li>
+        <li>Check what it would send: <code>python ledger_sync.py --dry-run</code></li>
+        <li>Send it: <code>python ledger_sync.py --once --i-understand</code>, or keep it running while you play with <code>--watch</code>.</li>
+      </ol>
+    </div>
+    <div class="card-flat stack-sm">
+      <h2>What happens to the data</h2>
+      <ul class="small stack-sm">
+        <li><strong>Loot</strong> of items already in the Archive becomes a drop report (source “ledger”). Items the Archive doesn't know become <a href="/proposals">suggestions</a> for someone to review.</li>
+        <li><strong>Kills</strong> {% if watch_on %}of creatures the Watch tracks update their spawn timers.{% else %}are counted but not used, because the Watch (spawn timers) is closed.{% endif %}</li>
+        <li><strong>Vendor sales and harvesting</strong> are counted and otherwise ignored for now.</li>
+        <li>Sending the same events twice does nothing: each one is only imported once.</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}

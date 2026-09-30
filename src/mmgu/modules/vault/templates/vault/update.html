@@ -1,0 +1,72 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% import "vault/_ui.html" as v with context %}
+{% block title %}Update {{ mule.name }} · The Vault{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="titles"><p class="eyebrow"><a href="/vault">The Vault</a> · <a href="/vault/mules/{{ mule.id }}">{{ mule.name }}</a></p>
+    <h1>Update {{ mule.name }}'s inventory</h1>
+    <p class="lede">Paste everything {{ mule.name }} holds right now. You'll see what changes before anything is saved; items missing from the list are removed.</p></div>
+</header>
+
+{% if preview %}
+<section class="section" id="preview">
+  <div class="section-head"><h2>Check the changes</h2>
+    <span class="small muted">{% if proposal %}Read from a screenshot by {{ proposal.source }}. Compare it with the screenshot before applying.{% else %}{{ plural(lines|length, "item") }} in your list{% endif %}</span></div>
+  {% if proposal and proposal.upload_id %}<a href="/uploads/{{ proposal.upload_id }}" target="_blank" hx-boost="false"><img src="/uploads/{{ proposal.upload_id }}" alt="Bank screenshot" style="max-height:18rem;border-radius:4px;border:1px solid var(--rule)"></a>{% endif %}
+  {% if skipped %}<div class="notice"><strong>{{ plural(skipped|length, "line") }} couldn't be read and will be ignored</strong><p class="small mono">{{ skipped[:8] | join(" · ") }}{% if skipped|length > 8 %} …{% endif %}</p></div>{% endif %}
+  {% if preview.has_changes %}
+  <div class="vault-diff">
+    <div class="card added"><h3>Added <span class="small muted">{{ preview.added|length }}</span></h3>
+      {% if preview.added %}<ul>{% for r in preview.added %}<li><span>{{ v.item_name(r.name, r.item_id) }}</span><span class="n">{{ r.qty }}</span></li>{% endfor %}</ul>{% else %}<p class="small muted">Nothing new.</p>{% endif %}</div>
+    <div class="card changed"><h3>Changed <span class="small muted">{{ preview.changed|length }}</span></h3>
+      {% if preview.changed %}<ul>{% for r in preview.changed %}<li><span>{{ v.item_name(r.name, r.item_id) }}</span><span class="n">{{ r.old }} → <strong>{{ r.qty }}</strong></span></li>{% endfor %}</ul>{% else %}<p class="small muted">No counts changed.</p>{% endif %}</div>
+    <div class="card removed"><h3>Removed <span class="small muted">{{ preview.removed|length }}</span></h3>
+      {% if preview.removed %}<ul>{% for r in preview.removed %}<li><span>{{ v.item_name(r.name, r.item_id) }}</span><span class="n">−{{ r.qty }}</span></li>{% endfor %}</ul>{% else %}<p class="small muted">Nothing removed.</p>{% endif %}</div>
+  </div>
+  {% if preview.same %}<p class="small muted">{{ plural(preview.same|length, "item") }} unchanged.</p>{% endif %}
+  <form class="row" method="post" action="/vault/mules/{{ mule.id }}/update/apply">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <input type="hidden" name="lines" value="{{ lines | tojson | forceescape }}">
+    {% if proposal %}<input type="hidden" name="proposal_id" value="{{ proposal.id }}">{% endif %}
+    <input name="note" type="text" placeholder="Note for the history (optional)" aria-label="Note" style="flex:1;min-width:12rem">
+    <button class="btn primary">{{ icon("check", 16) }} Apply these changes</button>
+    <a class="btn ghost" href="/vault/mules/{{ mule.id }}">Cancel</a>
+  </form>
+  {% else %}
+  <div class="notice tide"><strong>Nothing to change</strong><p class="small muted">{{ mule.name }} already holds exactly this.</p></div>
+  {% endif %}
+</section>
+{% endif %}
+
+<div class="cols">
+  <section class="card">
+    <h3>{{ "Edit the list" if preview else "Paste the inventory" }}</h3>
+    <form class="stack" method="post" action="/vault/mules/{{ mule.id }}/update/preview">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      {% if proposal %}<input type="hidden" name="proposal_id" value="{{ proposal.id }}">{% endif %}
+      <div class="field"><label for="inv-text">One item per line</label>
+        <textarea id="inv-text" class="vault-paste" name="text" required placeholder="Rusty Scimitar x3&#10;3 Bone Chips&#10;Cloth Cap&#10;&#10;…or paste an /outputfile inventory file">{{ text }}</textarea>
+        <p class="hint">Accepts <code>Rusty Scimitar x3</code>, <code>3 Bone Chips</code>, <code>Cloth Cap (2)</code> and tab-separated <code>Location · Name · ID · Count · Slots</code> rows (EverQuest's <code>/outputfile inventory</code> format). A line without a number counts as 1.</p></div>
+      <label class="check small"><input type="checkbox" name="bank_only" value="1" {% if bank_only %}checked{% endif %}> For tab-separated files, only count bank and shared-bank slots</label>
+      <div class="form-foot"><button class="btn primary">Preview changes</button><a class="btn ghost" href="/vault/mules/{{ mule.id }}">Back to {{ mule.name }}</a></div>
+    </form>
+  </section>
+  <aside class="stack">
+    {% if reader %}
+    <section class="card"><h3>{{ icon("image", 16) }} Or read a screenshot</h3>
+      <p class="small muted">Screenshot the bank window. The reader suggests the list; you check it here before anything changes.</p>
+      <form class="stack" method="post" action="/vault/mules/{{ mule.id }}/read" enctype="multipart/form-data">
+        <input type="hidden" name="csrf" value="{{ csrf }}">{{ ui.screenshot_input("Bank screenshot", True) }}
+        <button class="btn">Read screenshot</button></form>
+    </section>
+    {% endif %}
+    <section class="card"><h3>Tips</h3>
+      <ul class="small muted" style="margin:0;padding-left:1.1rem">
+        <li>Duplicate lines are added together.</li>
+        <li>Names that match the Archive link to the item page.</li>
+        <li>Each change goes in the history as an inventory update, so nothing is lost.</li>
+      </ul></section>
+  </aside>
+</div>
+{% endblock %}

@@ -7,6 +7,7 @@ the overlay shows it on stream, and the Tidings digest counts it. None of them i
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import logging
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
@@ -16,6 +17,25 @@ from typing import Any
 log = logging.getLogger(__name__)
 
 Handler = Callable[["HallEvent"], Awaitable[None]]
+
+# While a database session is open (see mmgu.db), emitted events wait here until it commits, so
+# handlers that open their own session always see the new rows. A rollback discards them.
+_pending: contextvars.ContextVar[list | None] = contextvars.ContextVar("mmgu_pending_events", default=None)
+
+
+def begin_deferral() -> contextvars.Token:
+    return _pending.set([])
+
+
+def end_deferral(token: contextvars.Token, *, dispatch: bool) -> None:
+    pending = _pending.get() or []
+    try:
+        _pending.reset(token)
+    except ValueError:  # closed from a different context (e.g. a cancelled task); just stop deferring
+        _pending.set(None)
+    if dispatch:
+        for bus, event in pending:
+            bus._dispatch(event)
 
 
 @dataclass
@@ -49,10 +69,23 @@ class EventBus:
         return out
 
     async def emit(self, name: str, actor_id: int | None = None, **data: Any) -> None:
-        """Run handlers in the background so a slow Discord post never slows down a web request."""
+        """Run handlers in the background, after the current database transaction commits.
+
+        A slow Discord post never slows down a web request, and handlers never see uncommitted data.
+        """
         event = HallEvent(name, data, actor_id)
-        for handler in self._matching(name):
-            task = asyncio.create_task(self._run(handler, event))
+        pending = _pending.get()
+        if pending is not None:
+            pending.append((self, event))
+        else:
+            self._dispatch(event)
+
+    def _dispatch(self, event: HallEvent) -> None:
+        for handler in self._matching(event.name):
+            # Handlers start with no deferral list of their own; their sessions set one up.
+            ctx = contextvars.copy_context()
+            ctx.run(_pending.set, None)
+            task = asyncio.get_running_loop().create_task(self._run(handler, event), context=ctx)
             self._background.add(task)
             task.add_done_callback(self._background.discard)
 

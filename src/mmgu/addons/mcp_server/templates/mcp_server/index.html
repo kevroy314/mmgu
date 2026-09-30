@@ -1,0 +1,62 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}Claude Integration{% endblock %}
+{% block content %}
+{% call ui.page_head("Add-on", "Claude Integration", "Ask Claude about the hall: “what drops in Scarwood?”, “who can smith?”, “when is the next raid?”") %}
+{% if can_token %}<a class="btn primary" href="/me#tokens">{{ icon("key", 16) }} Create an API token</a>{% endif %}
+{% endcall %}
+
+<div class="cols">
+  <section class="stack">
+    <div class="card stack-sm">
+      <h2>1. Get a token and the tool</h2>
+      <ol class="small stack-sm">
+        <li>{% if can_token %}<a href="/me#tokens">Create an API token</a> on your profile page (name it “Claude”) and copy it. It's shown once.{% else %}Ask an officer for a rank that can create API tokens; your current rank can't.{% endif %}</li>
+        <li>Install <a href="https://docs.astral.sh/uv/getting-started/installation/" rel="noopener">uv</a>. It fetches and runs the Hallkeeper MCP server for you, so there's nothing else to install.</li>
+      </ol>
+    </div>
+
+    <div class="card stack-sm">
+      <h2>2a. Claude Code</h2>
+      <p class="small">Run this once in a terminal, with your token pasted in:</p>
+      <pre class="mono small" style="white-space:pre-wrap;word-break:break-all">claude mcp add hallkeeper \
+  -e MMGU_API_URL={{ hall_url }} \
+  -e MMGU_API_TOKEN=mmgu_your_token_here \
+  -- uvx --from "mmgu[mcp] @ git+https://github.com/kevroy314/mmgu" mmgu mcp</pre>
+      <p class="small muted">Already have Hallkeeper installed (<code>pip install "mmgu[mcp]"</code>)? Use <code>-- mmgu mcp</code> at the end instead.</p>
+    </div>
+
+    <div class="card stack-sm">
+      <h2>2b. Claude Desktop</h2>
+      <p class="small">Settings → Developer → Edit Config, and add this to <code>claude_desktop_config.json</code>, then restart Claude Desktop:</p>
+      <pre class="mono small" style="white-space:pre-wrap;word-break:break-all">{
+  "mcpServers": {
+    "hallkeeper": {
+      "command": "uvx",
+      "args": ["--from", "mmgu[mcp] @ git+https://github.com/kevroy314/mmgu", "mmgu", "mcp"],
+      "env": {
+        "MMGU_API_URL": "{{ hall_url }}",
+        "MMGU_API_TOKEN": "mmgu_your_token_here"
+      }
+    }
+  }
+}</pre>
+    </div>
+  </section>
+
+  <aside class="stack">
+    <div class="card-flat stack-sm">
+      <h2>What Claude can do</h2>
+      <ul class="small stack-sm">
+        <li><strong>Look up</strong> items and drops, the roster, the guild bank and its requests, Notice Board listings and requests, who can craft what, upcoming events and spawn timers.</li>
+        <li><strong>Do what you could do yourself</strong>: report a drop, post a Notice Board request, report a time of death. It acts as you and the audit log says so.</li>
+        <li><strong>Suggest anything else</strong>: other changes become <a href="/proposals">suggestions</a> an officer approves or discards. Claude can't change them directly.</li>
+      </ul>
+    </div>
+    <div class="notice tide">
+      <strong>{{ icon("key", 16) }} Your token, your permissions</strong>
+      <p class="small">Claude talks to the hall through the same API as the web app, using your token, so it sees exactly what you can see. Revoke the token on your profile page to cut it off. Questions you ask go to Anthropic along with what the hall returns, like anything else you share with Claude.</p>
+    </div>
+  </aside>
+</div>
+{% endblock %}

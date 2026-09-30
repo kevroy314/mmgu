@@ -1,0 +1,81 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% import "vault/_ui.html" as v with context %}
+{% block title %}{{ mule.name }} · The Vault{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="titles"><p class="eyebrow"><a href="/vault">The Vault</a> · Bank mule</p><h1>{{ mule.name }}</h1>
+    <p class="lede small">{{ plural(rows|length, "item") }} · {{ plural(pieces, "piece") }}{% if mule.server %} · {{ mule.server }}{% endif %}{% if owner %} · logged in by {{ owner.display_name }}{% endif %}</p></div>
+  <div class="actions">
+    {% if viewer.can("vault.manage") %}<a class="btn primary" href="/vault/mules/{{ mule.id }}/update">{{ icon("upload", 16) }} Update whole inventory</a>{% endif %}
+    <a class="btn ghost" href="/vault/history?mule={{ mule.id }}">{{ icon("clock", 16) }} Full history</a>
+  </div>
+</header>
+
+<div class="cols">
+  <div class="stack">
+    {% if viewer.can("vault.manage") %}
+    <section class="card">
+      <h3>Record a change</h3>
+      <form class="vault-quick" method="post" action="/vault/tx">
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="character_id" value="{{ mule.id }}">
+        <div class="field"><label for="tx-name">Item</label><input id="tx-name" name="name" type="text" required list="item-names" placeholder="e.g. Bone Chips"
+          hx-get="/archive/suggest" hx-trigger="input changed delay:250ms" hx-target="#item-names" hx-select="#item-names" hx-swap="outerHTML" hx-push-url="false"></div>
+        <div class="field"><label for="tx-qty">Qty</label><input id="tx-qty" name="qty" type="number" min="0" value="1" required></div>
+        <div class="field wide"><label for="tx-note">Note</label><input id="tx-note" name="note" type="text" placeholder="From / to whom, why"></div>
+        <div class="field wide"><span class="label">&nbsp;</span><div class="btn-row">
+          <button class="btn small primary" name="kind" value="deposit">{{ icon("plus", 14) }} Deposit</button>
+          <button class="btn small" name="kind" value="withdraw">Withdraw</button>
+          <button class="btn small ghost" name="kind" value="adjust" title="Set the count to exactly this number">Set count</button></div></div>
+      </form>
+      <datalist id="item-names">{% for h, c in rows %}<option value="{{ h.name }}"></option>{% endfor %}</datalist>
+    </section>
+    {% endif %}
+
+    <section class="section">
+      <div class="section-head"><h2>Holding</h2><span class="small muted">{{ plural(rows|length, "item") }}</span></div>
+      {% if rows %}
+      <div class="table-wrap"><table class="t"><thead><tr><th>Item</th><th class="n">Qty</th><th>Slot / note</th><th></th></tr></thead><tbody>
+      {% for h, c in rows %}
+      <tr>
+        <td><strong>{{ v.item_name(h.name, h.item_id) }}</strong></td>
+        <td class="n"><span class="vault-qty">{{ h.qty }}</span></td>
+        <td class="small muted">
+          {% if viewer.can("vault.manage") %}
+          <details class="fold"><summary>{{ h.slot or "" }}{% if h.slot and h.note %} · {% endif %}{{ h.note or ("add note" if not h.slot else "") }}</summary>
+            <form class="stack-sm" method="post" action="/vault/holdings/{{ h.id }}" style="margin-top:.4rem"><input type="hidden" name="csrf" value="{{ csrf }}">
+              <input name="slot" type="text" value="{{ h.slot or '' }}" placeholder="Slot, e.g. Bank 3" aria-label="Slot">
+              <input name="note" type="text" value="{{ h.note or '' }}" placeholder="Note, e.g. reserved for raid" aria-label="Note">
+              <button class="btn small">Save</button></form></details>
+          {% else %}{{ h.slot or "" }}{% if h.slot and h.note %} · {% endif %}{{ h.note or "" }}{% endif %}
+        </td>
+        <td>
+          {% if viewer.can("vault.manage") %}
+          <form class="vault-inline" method="post" action="/vault/tx"><input type="hidden" name="csrf" value="{{ csrf }}">
+            <input type="hidden" name="character_id" value="{{ mule.id }}"><input type="hidden" name="name" value="{{ h.name }}"><input type="hidden" name="kind" value="withdraw">
+            <input type="number" name="qty" min="1" max="{{ h.qty }}" value="1" aria-label="How many to withdraw">
+            <button class="btn small">Withdraw</button></form>
+          {% elif viewer.can("vault.request") %}
+          <a class="btn small" href="/vault/requests/new?item={{ h.name | urlencode }}">Request</a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody></table></div>
+      {% else %}
+      {{ ui.empty("chest", mule.name ~ " is empty", "Record a deposit above, or paste the whole inventory to fill it in one go." if viewer.can("vault.manage") else "Nothing is recorded on this mule yet.", "/vault/mules/" ~ mule.id ~ "/update" if viewer.can("vault.manage") else None, "Paste inventory") }}
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="stack">
+    <section class="card"><div class="row-between"><h3>{{ icon("clock", 16) }} History</h3><a class="small" href="/vault/history?mule={{ mule.id }}">All</a></div>
+      {% if tx %}<div class="list">{% for t, c, m in tx[:15] %}<div class="line"><div class="main">{{ v.item_name(t.name, t.item_id) }}<div class="tiny muted">{{ v.tx_kind(t) }}{% if m %} · {{ m.display_name }}{% endif %} · {{ t.created_at | reltime }}{% if t.note %} · {{ t.note }}{% endif %}</div></div>{{ v.delta(t) }}</div>{% endfor %}</div>
+      {% else %}<p class="small muted">No changes recorded yet.</p>{% endif %}
+    </section>
+    {% if mules|length > 1 %}
+    <section class="card"><h3>Other mules</h3><div class="chips">{% for m in mules if m.id != mule.id %}<a class="chip" href="/vault/mules/{{ m.id }}">{{ m.name }}</a>{% endfor %}</div></section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

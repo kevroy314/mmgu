@@ -1,0 +1,16 @@
+<section class="card">
+  <div class="row-between"><h3>{{ icon("chest", 18) }} The Vault</h3><a class="small" href="/vault">Guild bank</a></div>
+  {% if viewer.can("vault.manage") %}
+    {% if pending %}
+    <p class="small"><strong>{{ plural(pending|length, "request") }} waiting for a banker</strong></p>
+    <div class="list">{% for r, m in pending %}<div class="line"><div class="main"><a href="/vault/requests/{{ r.id }}">{{ r.qty }} × {{ r.name }}</a><div class="tiny muted">{{ m.display_name if m else "?" }} · {{ r.created_at | reltime }}</div></div></div>{% endfor %}</div>
+    {% else %}<p class="small muted">No bank requests waiting.</p>{% endif %}
+  {% endif %}
+  {% if mine %}<p class="small">Your requests: {% for r, m in mine %}<a href="/vault/requests/{{ r.id }}">{{ r.name }}</a> ({{ r.status }}){{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+  {% if deposits %}
+  <p class="tiny muted">Recent deposits</p>
+  <div class="list">{% for t, c in deposits %}<div class="line"><div class="main">{{ t.name }}<div class="tiny muted">{{ c.name }} · {{ t.created_at | reltime }}</div></div><span class="num" style="color:var(--tide)">+{{ t.delta }}</span></div>{% endfor %}</div>
+  {% elif not viewer.can("vault.manage") and not mine %}
+  <p class="small muted">Nothing deposited yet. <a href="/vault">See the bank</a>.</p>
+  {% endif %}
+</section>

@@ -1,0 +1,9 @@
+<section class="card">
+  <div class="row-between"><h3>{{ icon("anvil", 18) }} The Crafters' Hall</h3><a class="small" href="/crafters">Tradeskills</a></div>
+  {% if recent %}
+  <div class="list">{% for s, ch in recent %}<div class="line"><div class="main"><strong>{{ ch.name }}</strong> <span class="small muted">{{ s.skill }}</span>{% if s.specialty %}<div class="tiny muted">{{ s.specialty }}</div>{% endif %}</div><span class="num">{{ s.level }}</span></div>{% endfor %}</div>
+  <p class="tiny muted">Recently updated skills.</p>
+  {% else %}
+  <p class="small muted">No tradeskills recorded yet. {% if viewer.can("crafters.edit") %}<a href="/crafters/mine">Add yours</a> so the guild knows who can make what.{% endif %}</p>
+  {% endif %}
+</section>

@@ -1,0 +1,35 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}{{ recipe.result_name }} · Recipe{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div class="titles"><p class="eyebrow"><a href="/crafters/recipes">Recipes</a> · {{ recipe.skill }}</p>
+    <h1>{% if recipe.result_item_id and "archive" in enabled %}<a href="/archive/items/{{ recipe.result_item_id }}">{{ recipe.result_name }}</a>{% else %}{{ recipe.result_name }}{% endif %}{% if recipe.yield_qty > 1 %} <span class="muted">×{{ recipe.yield_qty }}</span>{% endif %}</h1>
+    <p class="lede small">{{ recipe.skill }}{% if recipe.trivial %} · trivial at {{ recipe.trivial }}{% else %} · trivial unknown{% endif %}{% if author %} · added by {{ author.display_name }}{% endif %} {{ recipe.created_at | reltime }}</p></div>
+  <div class="actions">
+    {% if comps %}<form method="post" action="/crafters/recipes/{{ recipe.id }}/ask"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn primary" title="{{ 'Posts a request on the Notice Board' if board_open else 'Tells the guild what you need' }}">{{ icon("pin", 16) }} Ask the guild for components</button></form>{% endif %}
+    {% if can_edit %}<a class="btn" href="/crafters/recipes/{{ recipe.id }}/edit">{{ icon("edit", 16) }} Edit</a>{% endif %}
+  </div>
+</header>
+{% include "crafters/_tabs.html" %}
+<div class="cols">
+  <div class="stack">
+    <section class="card"><h3>Components</h3>
+      {% if comps %}<div class="list">{% for c in comps %}<div class="line"><span class="num craft-qty">{{ c.qty }}×</span><div class="main">{% if c.item_id and "archive" in enabled %}<a href="/archive/items/{{ c.item_id }}">{{ c.name }}</a>{% else %}{{ c.name }}{% endif %}</div></div>{% endfor %}</div>
+      {% else %}<p class="small muted">No components listed yet.{% if can_edit %} <a href="/crafters/recipes/{{ recipe.id }}/edit">Add them</a>.{% endif %}</p>{% endif %}
+    </section>
+    {% if recipe.notes %}<section class="card"><h3>Notes</h3><p class="small">{{ recipe.notes | nl2br }}</p></section>{% endif %}
+    {% if recipe.source_url %}<p class="small"><a href="{{ recipe.source_url }}" target="_blank" rel="noopener nofollow">Source ↗</a></p>{% endif %}
+  </div>
+  <aside class="stack">
+    <section class="card"><h3>{{ icon("anvil", 16) }} Who can make it</h3>
+      <p class="tiny muted">{{ "Everyone with " ~ recipe.skill ~ " at " ~ recipe.trivial ~ " or higher." if recipe.trivial else "Everyone with " ~ recipe.skill ~ " (no trivial recorded)." }}</p>
+      {% if makers %}<div class="list">{% for c in makers %}{% include "crafters/_crafter_line.html" %}{% endfor %}</div>
+      {% else %}<p class="small muted">Nobody has recorded {{ recipe.skill }}{{ " that high" if recipe.trivial }} yet.</p>{% endif %}
+    </section>
+    {% if can_edit %}<form method="post" action="/crafters/recipes/{{ recipe.id }}/delete" hx-confirm="Remove the recipe for {{ recipe.result_name }}?"><input type="hidden" name="csrf" value="{{ csrf }}">
+      <button class="btn small danger">{{ icon("trash", 14) }} Remove recipe</button></form>{% endif %}
+  </aside>
+</div>
+{% endblock %}

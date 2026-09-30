@@ -1,0 +1,13 @@
+<section class="section" id="crafting">
+  <div class="section-head"><h2>Crafting</h2><a class="small" href="/crafters/whocan?q={{ item.name | urlencode }}">Who can make it?</a></div>
+  {% for r, comps, makers in makes %}
+  <div class="card">
+    <div class="row-between"><h3><a href="/crafters/recipes/{{ r.id }}">Made with {{ r.skill }}</a></h3>{% if r.trivial %}<span class="pill gold">trivial {{ r.trivial }}</span>{% endif %}</div>
+    {% if comps %}<p class="small muted">Needs: {% for c in comps %}{{ c.qty ~ "× " if c.qty > 1 }}{% if c.item_id %}<a href="/archive/items/{{ c.item_id }}">{{ c.name }}</a>{% else %}{{ c.name }}{% endif %}{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+    {% if makers %}<p class="small">Can make it: {% for c in makers[:10] %}<strong>{{ c.character.name }}</strong> <span class="tiny muted">{{ c.row.level }}</span>{{ ", " if not loop.last }}{% endfor %}{% if makers | length > 10 %} and {{ makers | length - 10 }} more{% endif %}</p>
+    {% else %}<p class="small muted">Nobody has {{ r.skill }}{{ " at " ~ r.trivial ~ "+" if r.trivial }} recorded yet.</p>{% endif %}
+  </div>
+  {% endfor %}
+  {% if uses %}<p class="small"><strong>Used in:</strong> {% for r in uses %}<a href="/crafters/recipes/{{ r.id }}">{{ r.result_name }}</a> <span class="tiny muted">({{ r.skill }})</span>{{ ", " if not loop.last }}{% endfor %}</p>{% endif %}
+  {% if not makes and not uses %}<p class="small muted">No recipes make or use this item yet.{% if viewer.can("crafters.edit") %} <a href="/crafters/recipes/new?result={{ item.name | urlencode }}">Add the recipe</a> if you know it.{% endif %}</p>{% endif %}
+</section>

@@ -1,0 +1,8 @@
+.venv
+data
+.git
+.pytest_cache
+.ruff_cache
+**/__pycache__
+.env
+deploy/home/*.local.*

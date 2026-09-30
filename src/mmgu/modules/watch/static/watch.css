@@ -1,0 +1,26 @@
+/* The Watch: big, glanceable countdowns that work on a phone propped next to the game. */
+.watch-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: 1rem; }
+.watch-card { display: flex; flex-direction: column; gap: .55rem; border-left: 4px solid var(--rule); }
+.watch-card h3 { margin: 0; }
+.watch-card h3 a { text-decoration: none; }
+.watch-card-open { border-left-color: var(--tide); background: color-mix(in srgb, var(--tide) 7%, var(--surface)); }
+.watch-card-waiting { border-left-color: var(--gold); }
+.watch-card-overdue { border-left-color: var(--ember); }
+.watch-head { align-items: flex-start; }
+.watch-count { display: flex; flex-direction: column; gap: .1rem; }
+.watch-count-k { font-size: .8rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.watch-big { font-family: var(--font-mono, "JetBrains Mono", monospace); font-size: clamp(1.9rem, 7vw, 2.6rem); line-height: 1.05; font-weight: 500; font-variant-numeric: tabular-nums; }
+.watch-dim { color: var(--muted); font-size: 1.4rem; font-family: inherit; }
+.watch-big.countdown-open { color: var(--tide); }
+.watch-meta { margin: 0; }
+.watch-actions { align-items: center; }
+.watch-actions form { margin: 0; }
+.watch-ago { display: inline-flex; gap: .3rem; }
+.watch-ago input { width: 4.5rem; }
+.pill.watch-open { color: var(--tide); border-color: color-mix(in srgb, var(--tide) 60%, transparent); background: color-mix(in srgb, var(--tide) 14%, transparent); font-weight: 500; }
+.pill.watch-waiting { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 50%, transparent); }
+.pill.watch-overdue { color: var(--ember); border-color: color-mix(in srgb, var(--ember) 55%, transparent); }
+.pill.watch-unknown { color: var(--muted); }
+@media (max-width: 640px) {
+  .watch-card .btn.small { padding-block: .55rem; }  /* bigger tap targets */
+}

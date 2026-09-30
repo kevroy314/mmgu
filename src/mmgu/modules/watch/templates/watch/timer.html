@@ -1,0 +1,60 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% from "watch/_macros.html" import dur, pill, big, tz_script %}
+{% block title %}{{ t.creature }} · The Watch{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="/static/m/watch/watch.css?v=1">
+<header class="page-head">
+  <div class="titles"><p class="eyebrow"><a href="/watch">The Watch</a>{% if t.zone %} · {{ t.zone }}{% endif %}</p>
+    <h1>{{ t.creature }}</h1>
+    <p class="lede small">Respawns every {{ dur(t.respawn_minutes) }}{% if t.variance_minutes %} ± {{ dur(t.variance_minutes) }}{% endif %} · {{ plural(s.watchers, "watcher") }}{% if not t.active %} · <span class="pill">switched off</span>{% endif %}</p></div>
+  <div class="actions">
+    <form method="post" action="/watch/timers/{{ t.id }}/watch"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="next" value="/watch/timers/{{ t.id }}">
+      <button class="btn {{ 'ghost' if not s.watching }}">{{ icon("check" if s.watching else "bell", 16) }} {{ "Watching" if s.watching else "Watch" }}</button></form>
+  </div>
+</header>
+<div class="cols">
+  <div class="stack">
+    <section class="card watch-card watch-card-{{ s.status }}">
+      <div class="row-between">{{ pill(s) }}{% if s.death %}<span class="small muted">Last died {{ s.death.died_at | dt }}</span>{% endif %}</div>
+      {{ big(s) }}
+      {% if s.window_start %}<p class="small muted">{% if s.window_start != s.window_end %}Window {{ s.window_start | dt }} – {{ s.window_end | dt }}{% else %}Spawns {{ s.window_start | dt }}{% endif %}</p>{% endif %}
+    </section>
+    {% if t.notes %}<section class="card"><h3>Notes</h3><p class="small">{{ t.notes | nl2br }}</p></section>{% endif %}
+    <section class="section"><div class="section-head"><h2>Deaths</h2><span class="small muted">latest sets the window</span></div>
+      {% if history %}
+      <div class="table-wrap"><table class="t"><thead><tr><th>Died</th><th>Reported by</th><th>Source</th><th></th></tr></thead><tbody>
+      {% for d, m in history %}<tr><td>{{ d.died_at | dt }} <div class="tiny muted">{{ d.died_at | reltime }}</div>{% if d.note %}<div class="tiny muted">{{ d.note }}</div>{% endif %}</td>
+        <td class="small">{{ m.display_name if m else "—" }}</td><td class="small">{{ d.source }}</td>
+        <td>{% if viewer.can("watch.manage") or (d.reported_by and d.reported_by == viewer.id) %}<form method="post" action="/watch/deaths/{{ d.id }}/delete" hx-confirm="Remove this time of death?"><input type="hidden" name="csrf" value="{{ csrf }}"><button class="btn small ghost" title="Remove">{{ icon("x", 14) }}</button></form>{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<p class="small muted">No kills reported yet. Report the first one to start the timer.</p>{% endif %}
+    </section>
+  </div>
+  <aside class="stack">
+    {% if viewer.can("watch.report") %}
+    <section class="card"><h3>{{ icon("skull", 16) }} Report a kill</h3>
+      <form method="post" action="/watch/timers/{{ t.id }}/tod" hx-confirm="{{ t.creature }} died just now?"><input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="when" value="now"><input type="hidden" name="next" value="/watch/timers/{{ t.id }}">
+        <button class="btn primary">ToD now</button></form>
+      <form class="stack-sm" method="post" action="/watch/timers/{{ t.id }}/tod" {{ tz_script() }}>
+        <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="tz_offset" value=""><input type="hidden" name="next" value="/watch/timers/{{ t.id }}">
+        <div class="fields">
+          <div class="field"><label for="t-ago">Minutes ago</label><input id="t-ago" name="minutes_ago" type="number" inputmode="numeric" min="0" max="10080"></div>
+          <div class="field"><label for="t-at">Or at</label><input id="t-at" name="at" type="datetime-local"></div>
+        </div>
+        <p class="tiny muted">"Or at" uses your device's clock and time zone.</p>
+        <input name="note" type="text" maxlength="200" placeholder="Note (optional)" aria-label="Note">
+        <button class="btn small">Record</button>
+      </form>
+    </section>
+    {% endif %}
+    {% if viewer.can("watch.manage") %}
+    <section class="card"><h3>{{ icon("edit", 16) }} Edit timer</h3>
+      {% include "watch/_timer_form.html" %}
+      <form method="post" action="/watch/timers/{{ t.id }}/delete" hx-confirm="Stop tracking {{ t.creature }}? Its history is deleted too."><input type="hidden" name="csrf" value="{{ csrf }}">
+        <button class="btn small danger">{{ icon("trash", 14) }} Stop tracking</button></form>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

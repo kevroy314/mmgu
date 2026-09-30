@@ -1,0 +1,29 @@
+{% extends "core/base.html" %}
+{% import "core/_macros.html" as ui %}
+{% block title %}{{ "Edit recipe" if recipe else "New recipe" }}{% endblock %}
+{% block content %}
+{{ ui.page_head("The Crafters' Hall", "Edit recipe: " ~ recipe.result_name if recipe else "Add a recipe", "If the result or a component is in the Archive, type its exact name and it links up automatically.") }}
+{% include "crafters/_tabs.html" %}
+<form class="stack card" method="post" action="{{ '/crafters/recipes/' ~ recipe.id ~ '/edit' if recipe else '/crafters/recipes' }}">
+  <input type="hidden" name="csrf" value="{{ csrf }}">
+  <div class="fields-2">
+    <div class="field"><label for="r-result">Makes</label><input id="r-result" name="result" type="text" required maxlength="120" list="item-names" value="{{ data.result or '' }}" placeholder="e.g. Bronze Short Sword"></div>
+    <div class="field"><label for="r-skill">Tradeskill</label>
+      <select id="r-skill" name="skill" required><option value="">Choose…</option>
+        {% for cat, names in categories.items() %}<optgroup label="{{ cat | capitalize }}">{% for n in names %}<option {% if n == data.skill %}selected{% endif %}>{{ n }}</option>{% endfor %}</optgroup>{% endfor %}
+      </select></div>
+  </div>
+  <div class="fields">
+    <div class="field"><label for="r-trivial">Trivial level</label><input id="r-trivial" name="trivial" type="number" min="0" max="{{ skill_max }}" value="{{ data.trivial or '' }}"><span class="hint">Optional. Where it stops giving skill-ups.</span></div>
+    <div class="field"><label for="r-yield">How many it makes</label><input id="r-yield" name="yield_qty" type="number" min="1" max="999" value="{{ data.yield_qty or 1 }}"></div>
+  </div>
+  <div class="field"><label for="r-comps">Components</label>
+    <textarea id="r-comps" name="components" rows="5" placeholder="One per line, e.g.&#10;2 Bronze Bar&#10;Leather Grip&#10;Water Flask x1">{{ data.components or '' }}</textarea>
+    <span class="hint">One per line. Put the quantity first ("2 Bronze Bar") or last ("Bronze Bar x2").</span></div>
+  <div class="field"><label for="r-notes">Notes</label><textarea id="r-notes" name="notes" rows="3" placeholder="Container, tools, where to buy components…">{{ data.notes or '' }}</textarea></div>
+  <div class="field"><label for="r-src">Source link</label><input id="r-src" name="source_url" type="url" maxlength="500" value="{{ data.source_url or '' }}" placeholder="https://… (wiki page, forum post)"></div>
+  <div class="form-foot"><button class="btn primary">{{ "Save recipe" if recipe else "Add recipe" }}</button>
+    <a class="btn ghost" href="{{ '/crafters/recipes/' ~ recipe.id if recipe else '/crafters/recipes' }}">Cancel</a></div>
+</form>
+<datalist id="item-names">{% for n in item_names %}<option>{{ n }}</option>{% endfor %}</datalist>
+{% endblock %}

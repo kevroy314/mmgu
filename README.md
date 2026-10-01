@@ -41,6 +41,7 @@ the login page. Never do this on a hall others can reach.
 - [Discord setup](docs/discord.md) and the command list
 - [Architecture](docs/architecture.md): modules, events, extension slots, auth
 - [Adapting after launch](docs/adapting.md): game patches, new systems, new modules
+- [Testing](docs/testing.md): what the regression suite catches
 - [Add-ons](docs/addons.md) and [the game's terms of service](docs/terms-of-service.md)
 
 ## Development

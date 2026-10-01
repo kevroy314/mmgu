@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,12 +13,17 @@ jobs:
       - run: uv venv --python 3.12 && uv pip install -e ".[dev,anthropic,mcp]"
       - run: .venv/bin/ruff check src tests
       - run: .venv/bin/ruff format --check src tests
-      - run: .venv/bin/python -m pytest -q
-  docker:
+      - run: node --check src/mmgu/static/js/app.js
+
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t hallkeeper:ci .
+      - uses: astral-sh/setup-uv@v5
+      - run: uv venv --python 3.12 && uv pip install -e ".[dev,anthropic,mcp]"
+      - name: Tests (SQLite) with coverage floor
+        run: .venv/bin/python -m pytest -q --cov --cov-report=term
+
   postgres:
     runs-on: ubuntu-latest
     services:
@@ -34,3 +39,17 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv venv --python 3.12 && uv pip install -e ".[dev,anthropic,mcp,postgres]"
       - run: .venv/bin/python -m pytest -q
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t hallkeeper:ci .
+      - name: Container boots, migrates and serves
+        run: |
+          docker run -d --name hk -p 8420:8420 -e MMGU_RUN_BOT=false -e MMGU_AUTH_MODES=dev -e MMGU_DEV_LOGIN=true hallkeeper:ci
+          for i in $(seq 1 60); do curl -fs localhost:8420/healthz && break; sleep 1; done
+          curl -fs localhost:8420/healthz | grep -q archive
+          curl -fs -o /dev/null localhost:8420/login
+          docker logs hk 2>&1 | tee hk.log
+          ! grep -q Traceback hk.log

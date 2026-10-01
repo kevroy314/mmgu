@@ -9,3 +9,6 @@ data/
 *.db-wal
 *.db-shm
 /deploy/home/*.local.*
+.coverage
+.coverage.*
+htmlcov/

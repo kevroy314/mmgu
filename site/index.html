@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hallkeeper · Getting started</title>
+<meta name="description" content="Hallkeeper is a self-hosted guild hall for Monsters & Memories: item catalog from screenshots, guild bank, notice board, crafters, events, spawn timers and stream overlays, in Discord and on the web.">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="crest.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column of "chambers"; wide blocks for the item window, steps and tables. */
+:root {
+  --bg: #1b1916; --bg-deep: #141210; --surface: #23201b; --surface-2: #2c2822; --ink: #ece4d2; --muted: #a39985;
+  --rule: #433c31; --gold: #e6c24a; --gold-ink: #1b1916; --tide: #5fb3ac; --ember: #e0925a;
+  --font-display: "Alegreya SC", "Palatino Linotype", Georgia, serif;
+  --font-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg: #f1ead9; --bg-deep: #e8dfca; --surface: #fbf6ea; --surface-2: #f3ecdb; --ink: #29231a; --muted: #6c6150;
+    --rule: #d2c4a4; --gold: #8a6710; --gold-ink: #fbf6ea; --tide: #1f7a73; --ember: #a55a1c; color-scheme: light; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; }
+a { color: var(--gold); text-underline-offset: 3px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; margin: 0; text-wrap: balance; }
+h2 { font-size: 1.9rem; color: var(--gold); }
+h3 { font-size: 1.15rem; }
+p { margin: 0; }
+code, pre { font-family: var(--font-mono); font-size: .86em; }
+code { background: var(--surface-2); padding: .08em .35em; border-radius: 3px; }
+pre { background: var(--bg-deep); border: 1px solid var(--rule); border-radius: 6px; padding: 1rem; overflow-x: auto; margin: 0; line-height: 1.5; }
+pre .c { color: var(--muted); }
+.wrap { max-width: 62rem; margin: 0 auto; padding: 0 20px; }
+.col { max-width: 44rem; }
+nav.top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0; flex-wrap: wrap; }
+nav.top .brand { display: flex; gap: .6rem; align-items: center; font-family: var(--font-display); font-size: 1.2rem; color: var(--ink); text-decoration: none; }
+nav.top .links { display: flex; gap: 1.2rem; flex-wrap: wrap; font-size: .95rem; }
+nav.top .links a { color: var(--muted); text-decoration: none; }
+nav.top .links a:hover { color: var(--ink); }
+header.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 2.5rem; align-items: center; padding: 3rem 0 3.5rem; }
+header.hero h1 { font-size: clamp(2.4rem, 1.6rem + 3vw, 3.6rem); }
+.eyebrow { font-family: var(--font-display); font-size: .82rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.2rem; margin-top: 1rem; }
+.cta { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.5rem; }
+.btn { display: inline-flex; align-items: center; gap: .4rem; padding: .6rem 1.1rem; border-radius: 6px; border: 1px solid var(--rule);
+  background: var(--surface-2); color: var(--ink); text-decoration: none; font-weight: 500; }
+.btn.primary { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
+.itemwin { background: #13120e; color: #e8e1cf; border: 1px solid #8c7433; box-shadow: inset 0 0 0 3px #13120e, inset 0 0 0 4px #5a4b24, 0 10px 30px rgba(0,0,0,.35);
+  border-radius: 3px; padding: 1.1rem 1.2rem; font-family: var(--font-mono); font-size: .82rem; line-height: 1.6; display: flex; flex-direction: column; gap: .5rem; }
+.itemwin .nm { font-family: var(--font-display); font-size: 1.3rem; color: #f0d36a; }
+.itemwin .k { color: #a8a08c; }
+.itemwin .guild { border-top: 1px dashed #5a4b24; padding-top: .5rem; color: #cfc6b0; }
+.itemwin .guild b { color: #7fd1c8; font-weight: 500; }
+.itemwin .ex { font-family: var(--font-body); font-size: .75rem; color: #a8a08c; font-style: italic; }
+section { padding: 3rem 0; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 1.4rem; }
+.rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr)); gap: 1rem; }
+.room { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: .35rem; }
+.room .plain { font-size: .85rem; color: var(--muted); }
+.room p { font-size: .95rem; }
+ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1.4rem; }
+ol.steps > li { counter-increment: s; display: grid; grid-template-columns: 2.4rem minmax(0, 1fr); gap: 1rem; }
+ol.steps > li::before { content: counter(s); width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--gold); color: var(--gold-ink);
+  font-family: var(--font-display); font-size: 1.15rem; display: grid; place-items: center; }
+ol.steps > li > div { display: flex; flex-direction: column; gap: .6rem; min-width: 0; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; min-width: 36rem; font-size: .95rem; }
+th, td { text-align: left; padding: .55rem .8rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-family: var(--font-display); font-weight: 500; background: var(--surface-2); }
+tr:last-child td { border-bottom: 0; }
+.notice { background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--ember); border-radius: 6px; padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: .4rem; }
+.pill { font-family: var(--font-mono); font-size: .72rem; padding: .1rem .5rem; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.pill.tide { color: var(--tide); } .pill.ember { color: var(--ember); }
+footer { border-top: 1px solid var(--rule); padding: 2rem 0 3rem; color: var(--muted); font-size: .9rem; display: flex; flex-direction: column; gap: .4rem; }
+@media (max-width: 760px) { header.hero { grid-template-columns: minmax(0, 1fr); padding-top: 1.5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="top">
+    <a class="brand" href="#"><img src="crest.svg" alt="" width="32" height="32"> Hallkeeper</a>
+    <div class="links"><a href="#rooms">Features</a><a href="#start">Get started</a><a href="#discord">Discord</a><a href="#hosting">Hosting</a><a href="https://github.com/kevroy314/mmgu">GitHub</a></div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <p class="eyebrow">A guild hall for Monsters &amp; Memories</p>
+      <h1>Everything your guild used to keep in spreadsheets</h1>
+      <p class="lede">Screenshot an item and it's cataloged. Ask the bank for it, post it for sale, find who can craft it, plan the raid that drops it, and time the spawn. In Discord and on the web, run by your guild.</p>
+      <div class="cta"><a class="btn primary" href="#start">Get started</a><a class="btn" href="https://github.com/kevroy314/mmgu">View on GitHub</a></div>
+    </div>
+    <div class="itemwin" aria-label="Example item card">
+      <div class="nm">Rusty Scimitar</div>
+      <div><span class="k">Slot:</span> PRIMARY SECONDARY</div>
+      <div>Skill: 1H Slashing&nbsp; Atk Delay: 36&nbsp; DMG: 5</div>
+      <div>WT: 7.0&nbsp; Size: MEDIUM</div>
+      <div><span class="k">Class:</span> ALL&nbsp; <span class="k">Race:</span> ALL</div>
+      <div class="guild"><b>Drops from</b> reports by your guild<br><b>In the Vault</b> count per bank character</div>
+      <span class="ex">Example card. <code>/item rusty scimitar</code> posts one in Discord.</span>
+    </div>
+  </header>
+
+  <section id="rooms">
+    <p class="eyebrow">Rooms of the hall</p>
+    <h2>What's inside</h2>
+    <div class="rooms">
+      <div class="room"><h3>The Archive</h3><span class="plain">Item catalog</span><p>Drop a screenshot of an inspect window; it's read, checked by a person, and saved with where it drops.</p></div>
+      <div class="room"><h3>The Vault</h3><span class="plain">Guild bank</span><p>Monsters &amp; Memories has no guild bank, so the hall tracks bank characters, deposits and withdrawal requests.</p></div>
+      <div class="room"><h3>The Notice Board</h3><span class="plain">Requests &amp; trade</span><p>WTS / WTB listings that expire, and requests for items or services with claim, done and thanks.</p></div>
+      <div class="room"><h3>The Crafters' Hall</h3><span class="plain">Tradeskills</span><p>Who has which tradeskill at what level, recipes, and "who can make this?"</p></div>
+      <div class="room"><h3>The Muster Roll</h3><span class="plain">Roster</span><p>Members, mains, alts and bank characters. Paste <code>/who</code> to update levels.</p></div>
+      <div class="room"><h3>The War Table</h3><span class="plain">Events &amp; loot</span><p>Sign-ups by role, reminders, attendance, transparent loot history and a calendar feed.</p></div>
+      <div class="room"><h3>The Watch</h3><span class="plain">Spawn timers</span><p>Report a time of death; the hall counts down the window and pings whoever's watching.</p></div>
+      <div class="room"><h3>The Beacon</h3><span class="plain">Stream overlay</span><p>OBS overlays that show item cards, discoveries, spawn windows and events live.</p></div>
+    </div>
+    <p class="col muted">Everything anyone changes is in the audit log. Anything a machine suggests (an AI screenshot read, an import, Claude) waits for a person to approve it.</p>
+  </section>
+
+  <section id="start">
+    <p class="eyebrow">About fifteen minutes</p>
+    <h2>Get started</h2>
+    <ol class="steps">
+      <li><div><h3>Get a machine and Docker</h3>
+        <p>Any always-on PC, a small VPS or a Google Cloud VM works. Install <a href="https://docs.docker.com/get-docker/">Docker</a>. For reading screenshots locally you'll also want an NVIDIA GPU with 8 GB or more; without one, the hall can use Claude for a fraction of a cent per screenshot, or you can type items in by hand.</p></div></li>
+      <li><div><h3>Download and configure</h3>
+<pre>git clone https://github.com/kevroy314/mmgu.git
+cd mmgu
+cp .env.example .env    <span class="c"># set MMGU_GUILD_NAME, MMGU_BASE_URL and MMGU_SECRET_KEY</span></pre>
+        <p>Make yourself leader: put <code>MMGU_BOOTSTRAP_LEADERS=discord:&lt;your Discord user id&gt;</code> in <code>.env</code>.</p></div></li>
+      <li><div><h3>Start the hall</h3>
+<pre>docker compose up -d                                  <span class="c"># http://localhost:8420</span>
+docker compose --profile ai up -d                     <span class="c"># optional: local AI on an NVIDIA GPU</span>
+docker compose --profile ai-setup run --rm ollama-pull <span class="c"># once: download the vision model</span></pre>
+        <p>Just exploring? Set <code>MMGU_AUTH_MODES=dev</code> and <code>MMGU_DEV_LOGIN=true</code>, run <code>docker compose exec hallkeeper mmgu seed-demo</code>, and log in with any name. Never leave dev login on for a hall others can reach.</p></div></li>
+      <li><div><h3>Connect Discord</h3><p>Create the bot and paste its settings into <code>.env</code> (below). The web hall shows a <strong>Set up Discord bot</strong> badge to leaders until it's connected, with the exact values to copy.</p></div></li>
+      <li><div><h3>Open the Steward's Office</h3><p>In the web hall, pick Discord channels for each room, adjust who can do what, and turn on any add-ons your guild wants.</p></div></li>
+    </ol>
+  </section>
+
+  <section id="discord">
+    <p class="eyebrow">Slash commands, buttons, channel posts</p>
+    <h2>Discord setup</h2>
+    <ol class="steps">
+      <li><div><p>At the <a href="https://discord.com/developers/applications">Discord Developer Portal</a>, create an application. On the <strong>Bot</strong> tab, reset and copy the token and turn on <strong>Server Members Intent</strong>.</p></div></li>
+      <li><div><p>On the <strong>OAuth2</strong> tab, copy the Client ID (and Client Secret for "Log in with Discord"), and add the redirect <code>&lt;your hall URL&gt;/auth/discord/callback</code>.</p></div></li>
+      <li><div>
+<pre>MMGU_AUTH_MODES=discord
+MMGU_DISCORD_TOKEN=...
+MMGU_DISCORD_CLIENT_ID=...
+MMGU_DISCORD_CLIENT_SECRET=...
+MMGU_DISCORD_GUILD_ID=...          <span class="c"># right-click your server → Copy Server ID</span>
+MMGU_DISCORD_ROLE_MAP=&lt;role id&gt;=officer,&lt;role id&gt;=member,&lt;role id&gt;=banker</pre>
+        <p>Restart with <code>docker compose up -d</code>, then invite the bot with the <code>bot</code> and <code>applications.commands</code> scopes. The badge in the web hall gives you the invite link.</p></div></li>
+    </ol>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>/item &lt;name&gt;</code></td><td>Post an item card from the Archive</td></tr>
+        <tr><td>Right-click a screenshot → Apps → Catalog item</td><td>Read an item screenshot into the Archive</td></tr>
+        <tr><td><code>/drops</code></td><td>What drops from a creature or in a zone</td></tr>
+        <tr><td><code>/bank search</code> · <code>/bank request</code></td><td>The guild bank</td></tr>
+        <tr><td><code>/wts</code> · <code>/wtb</code> · <code>/request</code> · <code>/board</code></td><td>The Notice Board</td></tr>
+        <tr><td><code>/crafter set</code> · <code>/whocan</code></td><td>Tradeskills</td></tr>
+        <tr><td><code>/event create</code> · <code>/events</code> · <code>/loot award</code></td><td>Events and loot</td></tr>
+        <tr><td><code>/tod</code> · <code>/timers</code> · <code>/watch</code> · <code>/camp</code></td><td>Spawn timers and camps</td></tr>
+        <tr><td><code>/char add</code> · <code>/roster</code> · <code>/stream item</code></td><td>Characters, roster, stream overlay</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section id="hosting">
+    <p class="eyebrow">Your hall, your hardware</p>
+    <h2>Hosting and sharing</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Setup</th><th>Good for</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>Home PC + Tailscale Funnel</td><td>A public <code>https://….ts.net</code> address with no domain or router changes; members install nothing</td><td>Free</td></tr>
+        <tr><td>Home PC + Cloudflare Tunnel</td><td>Your own domain, no open ports</td><td>Free</td></tr>
+        <tr><td>Google Cloud VM</td><td>Nobody wants to run Docker at home; <code>deploy/gcp/create-vm.sh</code> does it</td><td>≈ $15/month</td></tr>
+        <tr><td>Cloud Run + Cloud SQL</td><td>Fully managed, Postgres</td><td>≈ $30–45/month</td></tr>
+      </tbody></table></div>
+    <p class="col">The Discord bot only makes outgoing connections, so it works from anywhere. Details in <a href="https://github.com/kevroy314/mmgu/blob/main/docs/hosting.md">docs/hosting.md</a>.</p>
+  </section>
+
+  <section id="addons">
+    <p class="eyebrow">Off by default</p>
+    <h2>Add-ons and the game's rules</h2>
+    <div class="rooms">
+      <div class="room"><h3>Screenshot Reader <span class="pill ember">check ToS</span></h3><p>Reads item and bank screenshots with a local vision model (Ollama, Qwen3-VL) or Claude.</p></div>
+      <div class="room"><h3>Ledger Sync <span class="pill ember">ToS risk</span></h3><p>A companion each player runs on their own PC that sends loot and kills from the game's local log files. Read-only.</p></div>
+      <div class="room"><h3>Claude Integration <span class="pill tide">no game data</span></h3><p>An MCP server so Claude Code or Claude Desktop can search the hall and suggest changes for a person to approve.</p></div>
+    </div>
+    <div class="notice col"><strong>Where the line is</strong>
+      <p>The core hall never touches the game client. Add-ons that read game output carry a plain notice a leader must accept before they turn on, and the companion asks each player too. Hallkeeper never reads game memory or network traffic. Whether to use an add-on is each guild's and player's call. <a href="https://github.com/kevroy314/mmgu/blob/main/docs/terms-of-service.md">More on this</a>.</p></div>
+  </section>
+
+  <section id="adapting">
+    <p class="eyebrow">Early Access moves fast</p>
+    <h2>Built to change</h2>
+    <p class="col">New classes, stats, zones and tradeskills are edits to one game-pack file. A whole new system is <code>mmgu new-module &lt;id&gt;</code>: each module owns its tables, pages, Discord commands and migrations, and plugs into the others through events and extension slots. See <a href="https://github.com/kevroy314/mmgu/blob/main/docs/adapting.md">docs/adapting.md</a> and <a href="https://github.com/kevroy314/mmgu/blob/main/docs/architecture.md">docs/architecture.md</a>.</p>
+  </section>
+
+  <footer>
+    <p>Hallkeeper is free for noncommercial use under the <a href="https://github.com/kevroy314/mmgu/blob/main/LICENSE">PolyForm Noncommercial 1.0.0</a> license.</p>
+    <p>A fan project, not affiliated with Niche Worlds Cult or Monsters &amp; Memories. Game names belong to their owners.</p>
+  </footer>
+</div>
+</body>
+</html>

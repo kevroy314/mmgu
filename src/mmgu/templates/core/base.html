@@ -54,6 +54,7 @@
         <kbd class="only-wide">/</kbd>
         <div id="quick-results" class="quick-results" hidden></div>
       </form>
+      {% include "core/_discord_setup.html" %}
       <a class="icon-btn bell" href="/notices" aria-label="Notices">{{ icon("bell", 20) }}
         <span hx-get="/notices/count" hx-trigger="load, every 60s" hx-target="this" hx-select="this" hx-swap="outerHTML" hx-push-url="false"></span>
       </a>

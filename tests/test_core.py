@@ -112,3 +112,12 @@ async def test_bus_events_wait_for_commit(app):
         pass
     await hall.bus.drain()
     assert seen == []  # dropped on rollback
+
+
+async def test_discord_setup_badge_only_for_leaders(make_client):
+    lead = await make_client()
+    r = await lead.get("/", headers={"Accept": "text/html"})
+    assert "Set up Discord bot" in r.text and "/auth/discord/callback" in r.text
+    member = await make_client("Plain Member", "member")
+    r = await member.get("/", headers={"Accept": "text/html"})
+    assert "Set up Discord bot" not in r.text

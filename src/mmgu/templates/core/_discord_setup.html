@@ -1,0 +1,45 @@
+{# Topbar badge + popover with Discord bot setup steps. Shown to people who can change hall settings
+   while the bot isn't connected. #}
+{% set s = hall.settings %}
+{% set has_token = s.discord_token | length > 0 %}
+{% set online = hall.discord and hall.discord.available %}
+{% if viewer.can("admin.settings") and not online %}
+<button class="pill {{ 'blood' if has_token else 'ember' }} setup-badge" type="button" popovertarget="discord-setup">
+  {{ icon("discord", 14) }} {{ "Discord bot offline" if has_token else "Set up Discord bot" }}
+</button>
+<div id="discord-setup" popover class="setup-pop">
+  <div class="row-between"><h3>{{ icon("discord", 18) }} Connect the Discord bot</h3>
+    <button class="icon-btn" type="button" popovertarget="discord-setup" popovertargetaction="hide" aria-label="Close">{{ icon("x", 18) }}</button></div>
+  {% if has_token %}
+  <div class="notice blood"><strong>A bot token is set, but the bot isn't connected.</strong>
+    <p class="small">Check the hall's logs (<code>docker compose logs hallkeeper</code>). Usual causes: the token was reset in Discord, or <em>Server Members Intent</em> is off.</p></div>
+  {% else %}
+  <p class="small muted">The web hall works without it. The bot adds slash commands (<code>/item</code>, <code>/wts</code>, <code>/tod</code>…), the right-click "Catalog item" action and channel posts.</p>
+  {% endif %}
+  <ol class="setup-steps">
+    <li>Open the <a href="https://discord.com/developers/applications" target="_blank" rel="noopener">Discord Developer Portal</a> → <strong>New Application</strong>. Name it after your hall.</li>
+    <li><strong>Bot</strong> tab → <strong>Reset Token</strong>. Copy it. Turn on <strong>Server Members Intent</strong>.</li>
+    <li><strong>OAuth2</strong> tab → copy the <strong>Client ID</strong>. To also offer "Log in with Discord", copy the <strong>Client Secret</strong> and add this redirect:
+      <span class="copyline"><code>{{ s.base_url.rstrip('/') }}/auth/discord/callback</code>
+        <button class="btn small" type="button" data-copy="{{ s.base_url.rstrip('/') }}/auth/discord/callback">Copy</button></span></li>
+    <li>In Discord, turn on Developer Mode (User Settings → Advanced), right-click your server → <strong>Copy Server ID</strong>.</li>
+    <li>Add these to the hall's <code>.env</code> file:
+<pre class="mono tiny envblock">MMGU_DISCORD_TOKEN=<span class="muted">your bot token</span>
+MMGU_DISCORD_CLIENT_ID=<span class="muted">client id</span>
+MMGU_DISCORD_GUILD_ID=<span class="muted">server id</span>
+<span class="muted"># optional: Discord login and role sync</span>
+MMGU_DISCORD_CLIENT_SECRET=
+MMGU_DISCORD_ROLE_MAP=<span class="muted">&lt;role id&gt;=officer,&lt;role id&gt;=member</span></pre>
+      {% if "discord" not in s.auth_mode_list %}<span class="tiny muted">For Discord login, also add <code>discord</code> to <code>MMGU_AUTH_MODES</code> (currently <code>{{ s.auth_modes }}</code>).</span>{% endif %}</li>
+    <li>Restart the hall: <code>docker compose up -d</code>.</li>
+    <li>Invite the bot to your server:
+      {% if s.discord_client_id %}
+      <span class="copyline"><a class="btn small primary" href="https://discord.com/oauth2/authorize?client_id={{ s.discord_client_id }}&scope=bot+applications.commands&permissions=117760" target="_blank" rel="noopener">Invite the bot</a></span>
+      {% else %}
+      <span class="small muted">the invite link appears here once the Client ID is set.</span>
+      {% endif %}</li>
+    <li>Pick channels for discoveries, board posts, bank requests, events and spawn alerts in <a href="/steward/settings">Settings &amp; channels</a>.</li>
+  </ol>
+  <p class="tiny muted">Full guide: <code>docs/discord.md</code> in the repository. Only leaders see this badge, and it disappears once the bot is online.</p>
+</div>
+{% endif %}

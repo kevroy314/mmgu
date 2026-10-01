@@ -36,6 +36,7 @@ the login page. Never do this on a hall others can reach.
 
 ## Docs
 
+- [Getting started site](https://kevroy314.github.io/mmgu/)
 - [Hosting](docs/hosting.md): home PC, Tailscale Funnel, Cloudflare Tunnel, Google Cloud
 - [Discord setup](docs/discord.md) and the command list
 - [Architecture](docs/architecture.md): modules, events, extension slots, auth

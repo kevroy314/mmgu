@@ -324,3 +324,19 @@ details.fold > summary { cursor: pointer; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Discord setup badge + popover ---------- */
+.setup-badge { cursor: pointer; background: transparent; font-size: .78rem; }
+.setup-badge:hover { background: var(--surface); }
+.setup-pop { width: min(34rem, calc(100vw - 2rem)); max-height: min(80vh, 44rem); overflow-y: auto; margin: 4.5rem 1rem auto auto;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 1.1rem 1.25rem; }
+.setup-pop:popover-open { display: flex; flex-direction: column; gap: .8rem; }
+.setup-pop::backdrop { background: rgba(0, 0, 0, .35); }
+.setup-steps { margin: 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: .65rem; font-size: .95rem; }
+.setup-steps li::marker { color: var(--gold); font-family: var(--font-display); }
+.copyline { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin-top: .3rem; }
+.copyline code { overflow-wrap: anywhere; }
+.envblock { background: var(--bg); border: 1px solid var(--rule); border-radius: 4px; padding: .6rem .75rem; margin: .4rem 0 0;
+  overflow-x: auto; white-space: pre; }
+@media (max-width: 860px) { .setup-badge { font-size: 0; gap: 0; padding: .35rem; } .setup-pop { margin: 4rem auto auto; } }

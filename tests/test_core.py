@@ -121,3 +121,19 @@ async def test_discord_setup_badge_only_for_leaders(make_client):
     member = await make_client("Plain Member", "member")
     r = await member.get("/", headers={"Accept": "text/html"})
     assert "Set up Discord bot" not in r.text
+
+
+async def test_htmx_redirect_to_same_page_refreshes(make_client):
+    """Regression: 'Get a link code' / 'Create token' redirect to /me#..., which the browser only scrolled to."""
+    c = await make_client()
+    hx = {"HX-Request": "true", "HX-Current-URL": "http://test/me", "X-CSRF-Token": c.csrf}
+    r = await c.http.post("/me/link-code", headers=hx)
+    assert r.headers.get("HX-Refresh") == "true" and "HX-Redirect" not in r.headers
+    r = await c.get("/me")
+    assert "/link " in r.text  # the code is shown after the refresh
+    r = await c.http.post("/me/tokens", data={"name": "MCP"}, headers=hx)
+    assert r.headers.get("HX-Refresh") == "true"
+    r = await c.get("/me")
+    assert "mmgu_" in r.text
+    r = await c.http.post("/me", data={"display_name": "Elsewhere"}, headers={**hx, "HX-Current-URL": "http://test/x"})
+    assert r.headers.get("HX-Redirect") == "/me"

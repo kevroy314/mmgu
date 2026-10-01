@@ -6,6 +6,7 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from fastapi import Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -135,7 +136,13 @@ def toast(response: Response, message: str, kind: str = "ok") -> Response:
 def redirect(request: Request, url: str, message: str | None = None, kind: str = "ok") -> Response:
     if request.headers.get("hx-request") == "true":
         resp: Response = Response(status_code=204)
-        resp.headers["HX-Redirect"] = url
+        target = urlsplit(url)
+        current = urlsplit(request.headers.get("hx-current-url", ""))
+        if (target.path, target.query) == (current.path, current.query):
+            # Same page (maybe a different #anchor): the browser would only scroll, so reload it.
+            resp.headers["HX-Refresh"] = "true"
+        else:
+            resp.headers["HX-Redirect"] = url
     else:
         resp = RedirectResponse(url, status_code=303)
     if message:
